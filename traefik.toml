@@ -1,0 +1,14 @@
+# traefik.toml
+
+# Set up logging.
+traefikLogsFile = "traefik.log"
+accessLogsFile = "access.log"
+
+# Set the Web Admin Port.
+[web]
+address = ":8080"
+
+# Configure Traefik to watch a file for config changes.
+[file]
+filename = "rules.toml"
+watch = true

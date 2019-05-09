@@ -1,0 +1,29 @@
+# EntryPoints
+# ===========
+# Determine which ports can be used to access Traefik managed routes.
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+
+# Frontends
+# ===========
+# Mainly take care of routing base on request info such as headers, paths, hostname etc. The frontends
+# also specify which backends must handle certain traffic.
+[frontends]
+  [frontends.frontend1]
+  entrypoints = ["http"]
+  backend = "backend1"
+  [frontends.frontend1.routes.base_route]
+    rule = "Host:localhost"
+
+# Backends
+# ===========
+# Manage load balancing and checking of the response info such as the status code and the status of the connection.
+[backends]
+  [backends.backend1]
+  entrypoints = ["http"]
+    [backends.backend1.servers.server1]
+    url = "http://localhost:8888"
+  [backends.ira]
+    [backends.ira.servers.server1]
+    url = "http://localhost:9000"
