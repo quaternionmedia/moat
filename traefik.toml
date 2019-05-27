@@ -5,6 +5,9 @@
 [log]
 filePath = "/logs/traefik.log"
 level = 'info'
+
+[accessLog]
+filePath = '/logs/access.log'
 # accessLogsFile = "/logs/access.log"
 
 # Set the Web Admin Port.
