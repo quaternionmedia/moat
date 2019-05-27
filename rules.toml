@@ -1,29 +1,80 @@
-# EntryPoints
-# ===========
-# Determine which ports can be used to access Traefik managed routes.
-[entryPoints]
-  [entryPoints.http]
-  address = ":80"
+[Global]
+debug = true
 
-# Frontends
-# ===========
-# Mainly take care of routing base on request info such as headers, paths, hostname etc. The frontends
-# also specify which backends must handle certain traffic.
-[frontends]
-  [frontends.frontend1]
-  entrypoints = ["http"]
-  backend = "backend1"
-  [frontends.frontend1.routes.base_route]
-    rule = "Host:localhost"
+# defaultEntryPoints = ["HTTP", "HTTPs"]
+#
+# [web]
+# # Port for the status page
+# address = ":8080"
+#
+# # Entrypoints, HTTP and HTTPs
+# [entryPoints]
+#   # HTTP should be redirected to HTTPs
+#   [entryPoints.HTTP]
+#   address = ":80"
+#     [entryPoints.HTTP.redirect]
+#     entryPoint = "HTTPs"
+#   # HTTPs is the default
+#   [entryPoints.HTTPs]
+#   address = ":443"
+#     [entryPoints.HTTPs.tls]
+# [HTTP]
+#   [HTTP.routers]
+#     [HTTP.routers.moat]
+#       rule = 'Host(tower.quaternion.media)'
+#       service = 'tower'
+#       entryPoints = 'HTTPs'
+#
+#   [HTTP.services]
+#     [HTTP.services.tower.LoadBalancer]
+#        [[HTTP.services.tower.LoadBalancer.servers]]
+#           url = "HTTP://localhost:8888/"
+#           weight = 1
+#
+# # Enable ACME (Let's Encrypt): automatic SSL
+# [acme]
+# # Email address used for registration
+# email = "harpo@harpo.me"
+# storageFile = "/acme.json"
+# entryPoint = "HTTPs"
+# onDemand = false
+# OnHostRule = true
+#   # Use a HTTP-01 acme challenge rather than TLS-SNI-01 challenge
+#   [acme.HTTPChallenge]
+#   entryPoint = "HTTP"
+#
+# # Enable Docker configuration backend
 
-# Backends
-# ===========
-# Manage load balancing and checking of the response info such as the status code and the status of the connection.
-[backends]
-  [backends.backend1]
-  entrypoints = ["http"]
-    [backends.backend1.servers.server1]
-    url = "http://localhost:8888"
-  [backends.ira]
-    [backends.ira.servers.server1]
-    url = "http://localhost:9000"
+#
+# [providers]
+# [providers.file]
+#   [providers.docker]
+#
+#     # [docker]
+#     endpoint = "unix:///var/run/docker.sock"
+#     # domain = "example.com"
+#     watch = true
+#     exposedbydefault = true
+#
+#
+#
+# [entrypoints]
+#     [entrypoints.HTTP]
+#     address = ":80"
+#
+# [HTTP]
+#   [HTTP.Routers]
+#    [HTTP.Routers.tower]
+#       rule = "Host(`harpo.me`)"
+#       service = "Hnet"
+#       # entrypoint=["HTTP"]
+#
+#   [HTTP.Services]
+#         [HTTP.Services.Hnet.LoadBalancer]
+#           [[HTTP.Services.Hnet.LoadBalancer.servers]]
+#             url = "docker.for.mac.host.internal:8888"
+# [tcp]
+#   [tcp.services]
+#     [tcp.services.my-service.LoadBalancer]
+#        [[tcp.services.my-service.LoadBalancer.servers]]
+#           address = "localhost:8888"
