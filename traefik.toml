@@ -4,17 +4,28 @@
 # Set up logging.
 [log]
 filePath = "/logs/traefik.log"
-level = 'info'
+level = 'debug'
 
 [accessLog]
 filePath = '/logs/access.log'
 # accessLogsFile = "/logs/access.log"
 
 # Set the Web Admin Port.
-[web]
-address = ":8080"
+#[web]
+#address = ":8080"
+
+[entrypoints]
+  [entrypoints.http]
+    address = ":80"
+
+  [entrypoints.https]
+    address = ":443"
+#  [entrypoints.admin]
+#    address = ":8080"
 
 # Configure Traefik to watch a file for config changes.
-[file]
-filename = "/rules.toml"
-watch = true
+[providers]
+  [providers.file]
+    Directory = '/etc/traefik'
+    filename = "rules.toml"
+    watch = true

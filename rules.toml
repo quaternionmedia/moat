@@ -1,80 +1,18 @@
 [Global]
-debug = true
+Debug = true
 
-# defaultEntryPoints = ["HTTP", "HTTPs"]
-#
-# [web]
-# # Port for the status page
-# address = ":8080"
-#
-# # Entrypoints, HTTP and HTTPs
-# [entryPoints]
-#   # HTTP should be redirected to HTTPs
-#   [entryPoints.HTTP]
-#   address = ":80"
-#     [entryPoints.HTTP.redirect]
-#     entryPoint = "HTTPs"
-#   # HTTPs is the default
-#   [entryPoints.HTTPs]
-#   address = ":443"
-#     [entryPoints.HTTPs.tls]
-# [HTTP]
-#   [HTTP.routers]
-#     [HTTP.routers.moat]
-#       rule = 'Host(tower.quaternion.media)'
-#       service = 'tower'
-#       entryPoints = 'HTTPs'
-#
-#   [HTTP.services]
-#     [HTTP.services.tower.LoadBalancer]
-#        [[HTTP.services.tower.LoadBalancer.servers]]
-#           url = "HTTP://localhost:8888/"
-#           weight = 1
-#
-# # Enable ACME (Let's Encrypt): automatic SSL
-# [acme]
-# # Email address used for registration
-# email = "harpo@harpo.me"
-# storageFile = "/acme.json"
-# entryPoint = "HTTPs"
-# onDemand = false
-# OnHostRule = true
-#   # Use a HTTP-01 acme challenge rather than TLS-SNI-01 challenge
-#   [acme.HTTPChallenge]
-#   entryPoint = "HTTP"
-#
-# # Enable Docker configuration backend
+#[EntryPoints]
+#  [EntryPoints.http]
+#    Address = ":80"
+#  [EntryPoints.https]
+#    Address = ":443"
+#  [EntryPoints.adminPortal]
+#    Address = ':8080'
 
-#
-# [providers]
-# [providers.file]
-#   [providers.docker]
-#
-#     # [docker]
-#     endpoint = "unix:///var/run/docker.sock"
-#     # domain = "example.com"
-#     watch = true
-#     exposedbydefault = true
-#
-#
-#
-# [entrypoints]
-#     [entrypoints.HTTP]
-#     address = ":80"
-#
-# [HTTP]
-#   [HTTP.Routers]
-#    [HTTP.Routers.tower]
-#       rule = "Host(`harpo.me`)"
-#       service = "Hnet"
-#       # entrypoint=["HTTP"]
-#
-#   [HTTP.Services]
-#         [HTTP.Services.Hnet.LoadBalancer]
-#           [[HTTP.Services.Hnet.LoadBalancer.servers]]
-#             url = "docker.for.mac.host.internal:8888"
-# [tcp]
-#   [tcp.services]
-#     [tcp.services.my-service.LoadBalancer]
-#        [[tcp.services.my-service.LoadBalancer.servers]]
-#           address = "localhost:8888"
+#[ACME]
+#Email = 'harpo@harpo.me'
+#Storage = '/acme/acme.json'
+#OnHostRule = true
+#  [ACME.HTTPChallenge]
+#    EntryPoint = "http"
+

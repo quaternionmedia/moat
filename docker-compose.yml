@@ -10,17 +10,31 @@ networks:
 services:
   moat:
     image: traefik:2.0-alpine
-    command: --api --providers.docker
+    command: > 
+      --api 
+      --providers.docker
+      --providers.docker.tls 
+      --acme
+      --acme.acmelogging
+      --acme.email=harpo@harpo.me
+      --acme.entrypoint=https
+      --acme.httpchallenge
+      --acme.httpchallenge.entrypoint=http
+      --acme.storage=/acme/acme.json
+      --acme.onhostrule=true
+
     networks:
       - web
     ports:
       - '80:80'
       - '443:443'
       - '8080:8080'
+    labels:
+      - 'http.middlewares.redirect.redirectscheme.scheme=https'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik.toml:/etc/traefik/traefik.toml
-      - ./rules.toml:/rules.toml
+      - ./rules.toml:/etc/traefik/rules.toml
       - ./logs/:/logs/
       - ./acme/:/acme/
     restart: always
