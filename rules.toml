@@ -9,10 +9,10 @@ Debug = true
 #  [EntryPoints.adminPortal]
 #    Address = ':8080'
 
-#[ACME]
-#Email = 'harpo@harpo.me'
-#Storage = '/acme/acme.json'
-#OnHostRule = true
-#  [ACME.HTTPChallenge]
-#    EntryPoint = "http"
+[acme]
+Email = 'harpo@harpo.me'
+Storage = '/acme/acme.json'
+OnHostRule = true
+  [acme.tlschallenge]
+    EntryPoint = "http"
 

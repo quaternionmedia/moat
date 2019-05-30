@@ -1,18 +1,10 @@
-# traefik.toml
 
-
-# Set up logging.
 [log]
 filePath = "/logs/traefik.log"
-level = 'debug'
+level = 'info'
 
 [accessLog]
 filePath = '/logs/access.log'
-# accessLogsFile = "/logs/access.log"
-
-# Set the Web Admin Port.
-#[web]
-#address = ":8080"
 
 [entrypoints]
   [entrypoints.http]
@@ -20,12 +12,23 @@ filePath = '/logs/access.log'
 
   [entrypoints.https]
     address = ":443"
-#  [entrypoints.admin]
-#    address = ":8080"
 
-# Configure Traefik to watch a file for config changes.
+[http.middlewares]
+  [http.middlewares.redirect.headers]
+    SSLRedirect = true
+#    SSLForceHost = true
+
+[acme]
+  Email = 'harpo@harpo.me'
+  Storage = '/acme/acme.json'
+  OnHostRule = true
+  ACMELogging = true
+  [acme.httpchallenge]
+    EntryPoint = "http"
+#  [acme.tlschallenge]
+
 [providers]
   [providers.file]
     Directory = '/etc/traefik'
-    filename = "rules.toml"
-    watch = true
+    Filename = "rules.toml"
+    Watch = true
