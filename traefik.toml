@@ -1,7 +1,7 @@
 
 [log]
 filePath = "/logs/traefik.log"
-level = 'info'
+level = 'error'
 
 [accessLog]
 filePath = '/logs/access.log'
@@ -17,6 +17,21 @@ filePath = '/logs/access.log'
   [http.middlewares.redirect.headers]
     SSLRedirect = true
 #    SSLForceHost = true
+
+
+  [http.middlewares.connLimit.maxconn]
+    ammount = 10
+
+#  [http.middlewares.rateLimit.ratelimit]
+#    extractorfunc = "client.ip"
+#      [http.middlewares.rateLimit.ratelimit.rate0]
+#        period = "3s"
+#        average = 5
+#        burst = 10
+
+  [http.middlewares.daisy.Chain]
+    middlewares = ['redirect', 'connLimit']
+#, 'rateLimit']
 
 [acme]
   Email = 'harpo@harpo.me'

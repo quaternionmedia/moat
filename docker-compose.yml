@@ -7,8 +7,8 @@ networks:
 
 services:
   moat:
-    image: traefik:2.0-alpine
-    command: > 
+    image: traefik:v2.0.0-alpha4-alpine
+    command:
       --api 
       --providers.docker
     networks:
@@ -16,6 +16,7 @@ services:
     ports:
       - '80:80'
       - '443:443'
+      - '8080:8080'
         #    labels:
         #      - "traefik.http.middlewares.redirect.Headers.SSLRedirect=true"
     volumes:
