@@ -9,7 +9,7 @@ services:
   moat:
     image: traefik:v2.1.2
     command:
-      - --api.insecure 
+      - --api.insecure
       - --providers.docker
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
@@ -38,13 +38,14 @@ services:
     restart: always
     labels:
       # middleware redirect
-      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https      
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
       # global redirect to https
       - traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)
       - traefik.http.routers.redirs.entrypoints=web
       - traefik.http.routers.redirs.middlewares=redirect-to-https
   tower:
     image: tower
+    build: tower
     networks:
       - web
     labels:
@@ -52,4 +53,3 @@ services:
       - traefik.http.routers.Tower.entrypoints=websecure
       - traefik.http.routers.Tower.tls=true
       - traefik.http.routers.Tower.tls.certresolver=le
-
