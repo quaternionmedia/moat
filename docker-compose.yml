@@ -1,4 +1,4 @@
-version: '3'
+version: '3.3'
 
 networks:
   web:
@@ -7,10 +7,20 @@ networks:
 
 services:
   moat:
-    image: traefik:v2.0.0-alpha4-alpine
+    image: traefik:v2.1.2
     command:
-      --api 
-      --providers.docker
+      - --api.insecure 
+      - --providers.docker
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - "--certificatesresolvers.le.acme.email=junk@harpo.me"
+      - "--certificatesresolvers.le.acme.storage=/acme/acme.json"
+        #      - --certificatesresolvers.le.acme.tlschallenge=true
+      - "--certificatesresolvers.le.acme.httpchallenge=true"
+      - "--certificatesresolvers.le.acme.httpchallenge.entrypoint=web"
+        #      - --certificatesresolvers.le.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --log.filePath=/logs/a.log
+      - --log.level=DEBUG
     networks:
       - web
     ports:
@@ -21,14 +31,25 @@ services:
         #      - "traefik.http.middlewares.redirect.Headers.SSLRedirect=true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik.toml:/etc/traefik/traefik.toml
-      - ./rules.toml:/etc/traefik/rules.toml
+        #      - ./traefik.toml:/etc/traefik/traefik.toml
+        #- ./rules.toml:/etc/traefik/rules.toml
       - ./logs/:/logs/
       - ./acme/:/acme/
     restart: always
+    labels:
+      # middleware redirect
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https      
+      # global redirect to https
+      - traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)
+      - traefik.http.routers.redirs.entrypoints=web
+      - traefik.http.routers.redirs.middlewares=redirect-to-https
   tower:
     image: tower
     networks:
       - web
     labels:
-      - 'traefik.HTTP.Routers.Tower.rule=Host(`tower.quaternion.media`)'
+      - traefik.http.routers.Tower.rule=Host(`tower.quaternion.media`)
+      - traefik.http.routers.Tower.entrypoints=websecure
+      - traefik.http.routers.Tower.tls=true
+      - traefik.http.routers.Tower.tls.certresolver=le
+

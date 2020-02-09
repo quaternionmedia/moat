@@ -3,47 +3,17 @@
 filePath = "/logs/traefik.log"
 level = 'error'
 
-[accessLog]
-filePath = '/logs/access.log'
-
 [entrypoints]
-  [entrypoints.http]
+  [entrypoints.web]
     address = ":80"
 
-  [entrypoints.https]
+  [entrypoints.websecure]
     address = ":443"
 
-[http.middlewares]
-  [http.middlewares.redirect.headers]
-    SSLRedirect = true
-#    SSLForceHost = true
 
-
-  [http.middlewares.connLimit.maxconn]
-    ammount = 10
-
-#  [http.middlewares.rateLimit.ratelimit]
-#    extractorfunc = "client.ip"
-#      [http.middlewares.rateLimit.ratelimit.rate0]
-#        period = "3s"
-#        average = 5
-#        burst = 10
-
-  [http.middlewares.daisy.Chain]
-    middlewares = ['redirect', 'connLimit']
-#, 'rateLimit']
-
-[acme]
-  Email = 'harpo@harpo.me'
-  Storage = '/acme/acme.json'
-  OnHostRule = true
-  ACMELogging = true
-  [acme.httpchallenge]
-    EntryPoint = "http"
-#  [acme.tlschallenge]
-
-[providers]
-  [providers.file]
-    Directory = '/etc/traefik'
-    Filename = "rules.toml"
-    Watch = true
+[certificatesResolvers.sample.acme]
+  email = "your-email@your-domain.org"
+  storage = "acme.json"
+  [certificatesResolvers.letsecrypt.acme.httpChallenge]
+    # used during the challenge
+    entryPoint = "web"
