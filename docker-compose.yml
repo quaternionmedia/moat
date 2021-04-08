@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3'
 
 networks:
   web:
@@ -7,42 +7,37 @@ networks:
 
 services:
   moat:
-    image: traefik:v2.1.2
-    command:
-      - --api.insecure
+    image: traefik:v2.4
+    command: 
+      - --api.insecure=true
       - --providers.docker
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
+      - --entryPoints.web.address=:80
+      - --entryPoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+
+
       - "--certificatesresolvers.le.acme.email=junk@harpo.me"
       - "--certificatesresolvers.le.acme.storage=/acme/acme.json"
-        #      - --certificatesresolvers.le.acme.tlschallenge=true
       - "--certificatesresolvers.le.acme.httpchallenge=true"
       - "--certificatesresolvers.le.acme.httpchallenge.entrypoint=web"
-        #      - --certificatesresolvers.le.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
       - --log.filePath=/logs/a.log
       - --log.level=DEBUG
+      - --providers.file.directory=/config
+      - --providers.file.watch=true
     networks:
       - web
     ports:
       - '80:80'
       - '443:443'
       - '8080:8080'
-        #    labels:
-        #      - "traefik.http.middlewares.redirect.Headers.SSLRedirect=true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-        #      - ./traefik.toml:/etc/traefik/traefik.toml
-        #- ./rules.toml:/etc/traefik/rules.toml
       - ./logs/:/logs/
       - ./acme/:/acme/
+      - ./rules.yml:/config/rules.yml
     restart: always
-    labels:
-      # middleware redirect
-      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
-      # global redirect to https
-      - traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)
-      - traefik.http.routers.redirs.entrypoints=web
-      - traefik.http.routers.redirs.middlewares=redirect-to-https
+
   tower:
     image: tower
     build: tower
@@ -50,6 +45,6 @@ services:
       - web
     labels:
       - traefik.http.routers.Tower.rule=Host(`tower.quaternion.media`)
-      - traefik.http.routers.Tower.entrypoints=websecure
-      - traefik.http.routers.Tower.tls=true
-      - traefik.http.routers.Tower.tls.certresolver=le
+#      - traefik.http.routers.Tower.entrypoints=websecure
+#      - traefik.http.routers.Tower.tls=true
+#      - traefik.http.routers.Tower.tls.certresolver=le
