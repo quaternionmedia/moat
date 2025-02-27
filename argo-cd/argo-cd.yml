@@ -8,12 +8,16 @@ spec:
   destination:
     namespace: argocd
     server: https://kubernetes.default.svc
-  source:
-    chart: argo-cd
-    repoURL: https://argoproj.github.io/argo-helm
-    targetRevision: 7.8.5
-    helm:
-      releaseName: argo
+  sources:
+    - chart: argo-cd
+      repoURL: https://argoproj.github.io/argo-helm
+      targetRevision: 7.8.5
+      # helm:
+      #   valueFiles:
+      #     - $values/argo-cd/helm/values.yml
+    # - ref: values
+    #   targetRevision: HEAD
+    #   repoURL: https://github.com/quaternionmedia/moat.git
   syncPolicy:
     automated:
       prune: true
