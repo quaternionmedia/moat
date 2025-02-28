@@ -68,11 +68,9 @@ logs:
 #       - traefik-bouncer@kubernetescrd
 #       # - traefik-captcha-protect@kubernetescrd
   
-# service:
-#   annotations:
-#     service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: '*'
-#   spec:
-#     externalTrafficPolicy: Local
+service:
+  spec:
+    externalTrafficPolicy: Local
 
 # securityContext:
 #   readOnlyRootFilesystem: False
