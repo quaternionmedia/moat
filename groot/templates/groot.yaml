@@ -2,13 +2,12 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: groot
-  finalizers:
-  - resources-finalizer.argocd.argoproj.io
+  namespace: argo-cd
 spec:
   project: default
   source:
     repoURL: https://github.com/quaternionmedia/moat.git
-    path: apps/groot
+    path: groot
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
