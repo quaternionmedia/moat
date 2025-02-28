@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-cd
+  namespace: argo-cd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/quaternionmedia/moat.git
+    path: argo-cd
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-cd
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
