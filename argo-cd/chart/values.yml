@@ -1,0 +1,15 @@
+argo-cd:
+  global:
+    addPrometheusAnnotations: true
+  dex:
+    enabled: false
+  notifications:
+    enabled: false
+  applicationSet:
+    enabled: false  
+  server:
+    extraArgs:
+      - --insecure
+  configs:
+    cm:
+      kustomize.buildOptions: --enable-helm

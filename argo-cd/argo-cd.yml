@@ -1,25 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: argocd
-  namespace: argocd      
+  name: argo-cd
+  namespace: argo-cd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
+  source:
+    repoURL: https://github.com/quaternionmedia/moat.git
+    path: argo-cd/chart/
+    targetRevision: HEAD
   destination:
-    namespace: argocd
     server: https://kubernetes.default.svc
-  sources:
-    - chart: argo-cd
-      repoURL: https://argoproj.github.io/argo-helm
-      targetRevision: 7.8.5
-      # helm:
-      #   valueFiles:
-      #     - $values/argo-cd/helm/values.yml
-    # - ref: values
-    #   targetRevision: HEAD
-    #   repoURL: https://github.com/quaternionmedia/moat.git
+    namespace: argo-cd
   syncPolicy:
     automated:
-      prune: true
       selfHeal: true
-      allowEmpty: true
+      prune: true
