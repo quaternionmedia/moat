@@ -1,0 +1,8 @@
+apiVersion: v2
+name: influxdb
+version: 0.0.1
+description: 
+dependencies:
+- name: influxdb2
+  repository: https://helm.influxdata.com
+  version: 2.1.2

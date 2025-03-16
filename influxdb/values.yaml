@@ -1,0 +1,11 @@
+influxdb2:
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: mayastor-etcd-localpv
+    accessModes:
+      - ReadWriteOnce
+
+  # setDefaultUser:
+  #   enabled: true
+  #   user: harpo
