@@ -1,0 +1,10 @@
+grafana:
+  persistence:
+    enabled: true
+    type: pvc
+    size: 1Gi
+    storageClassName: mayastor-etcd-localpv
+    accessModes:
+      - ReadWriteOnce
+  initChownData:
+    enabled: false
