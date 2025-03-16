@@ -1,6 +1,10 @@
 argo-cd:
   global:
     addPrometheusAnnotations: true
+    podAnnotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/port: '8083'
+      prometheus.io/path: /metrics
   dex:
     enabled: false
   notifications:
