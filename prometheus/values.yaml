@@ -1,0 +1,4 @@
+prometheus:
+  server:
+    persistentVolume:
+      storageClass: mayastor-etcd-localpv
