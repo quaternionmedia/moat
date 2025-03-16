@@ -1,0 +1,8 @@
+apiVersion: v2
+name: openebs
+version: 0.0.1
+description: kubernetes storage orchestrator
+dependencies:
+- name: openebs
+  repository: https://openebs.github.io/openebs
+  version: 4.2.0
