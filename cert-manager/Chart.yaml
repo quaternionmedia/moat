@@ -6,3 +6,6 @@ dependencies:
 - name: cert-manager
   repository: https://charts.jetstack.io
   version: 1.17.1
+- name: cert-manager-technitium-webhook
+  repository: https://kittizz.github.io/cert-manager-technitium-webhook
+  version: 1.0.0
