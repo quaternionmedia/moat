@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: influx-ingress
+  namespace: influxdb
+spec:
+  routes:
+    - kind: Rule
+      match: Host(`logs.moat`)
+      services:
+        - kind: Service
+          name: influxdb-influxdb2
+          port: 80
