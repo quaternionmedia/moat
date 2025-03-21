@@ -79,7 +79,11 @@ traefik:
       enabled: true
       addRoutersLabels: true
       http:
-        endpoint: http://loki-backend.loki:3100/otlp/api/v1/logs
+        enabled: true
+        endpoint: http://loki-gateway.loki/
+        headers:
+          X-Scope-OrgID: traefik
+        
 
   # experimental:
   #   plugins:
