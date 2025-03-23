@@ -1,0 +1,5 @@
+victoria-logs-single:
+  server:
+    persistentVolume:
+      storageClassName: openebs-hostpath
+      size: 1Gi
