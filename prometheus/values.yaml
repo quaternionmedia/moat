@@ -1,11 +1,12 @@
-global:
-  scrape_interval: 15s
-
 prometheus:
+  global:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+
   server:
     persistentVolume:
       storageClass: mayastor-etcd-localpv
 
-alertmanager:
-  persistence:
-    storageClass: mayastor-etcd-localpv
+  alertmanager:
+    persistence:
+      storageClass: mayastor-etcd-localpv
