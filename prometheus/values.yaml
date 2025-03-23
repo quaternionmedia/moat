@@ -5,8 +5,8 @@ prometheus:
 
   server:
     persistentVolume:
-      storageClass: mayastor-etcd-localpv
+      # storageClass: mayastor-etcd-localpv
+      storageClass: openebs-hostpath
 
   alertmanager:
-    persistence:
-      storageClass: mayastor-etcd-localpv
+    enabled: false
