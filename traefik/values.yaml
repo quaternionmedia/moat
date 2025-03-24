@@ -81,13 +81,20 @@ traefik:
       http:
         enabled: true
         endpoint: http://victoria-metrics-victoria-metrics-single-server.victoria.svc.cluster.local.:8428/opentelemetry/v1/metrics
+      
   tracing:
+    addInternals: true
+    serviceName: traefik
+    
     otlp:
       enabled: true
       http:
         enabled: true
         endpoint: http://victoria-logs-victoria-logs-single-server.victoria.svc.cluster.local.:9428/insert/opentelemetry/v1/logs
-
+      grpc:
+        enabled: true
+        endpoint: tempo.tempo:4317
+        insecure: true
 
   # experimental:
   #   plugins:
