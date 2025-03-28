@@ -1,5 +1,5 @@
 cert-manager:
   crds:
     enabled: true
-cert-manager-technitium-webhook:
-  groupName: quaternion.media
+# cert-manager-technitium-webhook:
+#   groupName: quaternion.media

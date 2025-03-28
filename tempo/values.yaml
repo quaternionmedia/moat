@@ -1,0 +1,42 @@
+tempo:
+  tempo:
+    metricsGenerator:
+      enabled: true
+      remoteWriteUrl: http://prometheus-server.prometheus:9090/api/v1/write
+    #   processor:
+    #     local_blocks:
+    #       filter_server_spans: false
+    # config:
+    #   processor:
+    #     local_blocks:
+    #       flush_to_storage: true
+
+    storage:
+      trace:
+        backend: s3
+        s3:
+          bucket: tempo
+          endpoint: minio.minio
+          access_key: gjBcB7YSJRzZg4jOvAsM
+          secret_key: ZuKcJwbjnNE8vI3uk1qeylALUQfo3FhAwSYNJNj0
+          insecure: true
+    overrides:
+      # metrics_generator_processors: ['local-blocks']
+      defaults:
+        metrics_generator:
+          processors:
+          - service-graphs
+          - span-metrics
+          - local-blocks
+
+  traces:
+    otlp:
+      http:
+        enabled: true
+      grpc:
+        enabled: true
+  distributor:
+    config:
+      log_received_spans:
+        enabled: true
+  

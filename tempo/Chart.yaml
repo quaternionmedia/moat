@@ -1,8 +1,8 @@
 apiVersion: v2
 name: tempo
-version: 0.0.1
-description: 
+version: 0.0.2
+description: Grafana Tempo tracing system
 dependencies:
 - name: tempo
   repository: https://grafana.github.io/helm-charts
-  version: 1.18.3
+  version: 1.19.0
