@@ -8,7 +8,6 @@ traefik:
   ingressClass:
     enabled: true
     isDefaultClass: true
-
   ingressRoute:
     dashboard:
       enabled: true
@@ -16,17 +15,12 @@ traefik:
   logs:
     access:
       enabled: true
-      # format: json
-      # filePath: /var/log/access.log
+      format: json
       fields:
         headers:
           defaultmode: keep
     general:
       level: DEBUG
-
-  # additionalArguments:
-  # - --log.filepath=/var/log/traefik/traefik.log
-  # - --accesslog.filepath=/var/log/traefik/access.log
 
   ports:
     web:
@@ -43,44 +37,18 @@ traefik:
   #     proxyProtocol:
   #       trustedIPs:
   #       - 10.0.0.0/16
-  #     tls:
-  #       certResolver: production
-  #       enabled: true
-  #     middlewares:
-  #       - traefik-bouncer@kubernetescrd
-  #       # - traefik-captcha-protect@kubernetescrd
     
   service:
     spec:
       externalTrafficPolicy: Local
-
-  # securityContext:
-  #   readOnlyRootFilesystem: False
-  #   runAsGroup: 0
-  #   runAsUser: 0
-  #   runAsNonRoot: false
 
   metrics:
     addInternals: true
     prometheus:
       addRoutersLabels: true
       headerLabels:
-        # host: X-Forwarded-Host
-        # host: ClientHost
         useragent: request_User-Agent
         ip: request_X-Real-Ip
-    influxdb2:
-      address: http://influxdb-influxdb2.influxdb
-      token: wL6HxTgfL3mQIuT9i3FY4AasE4iZ-eshcDZGq-qb8k570dnm-bP9u8Ounnc7W5ZRg-PKbIyS3RCFNwROGpz5Fg==
-      bucket: traefik
-      org: 9e7602b64564cbef
-      addRoutersLabels: true
-    otlp:
-      enabled: true
-      addRoutersLabels: true
-      http:
-        enabled: true
-        endpoint: http://victoria-metrics-victoria-metrics-single-server.victoria.svc.cluster.local.:8428/opentelemetry/v1/metrics
       
   tracing:
     addInternals: true
@@ -88,9 +56,6 @@ traefik:
     
     otlp:
       enabled: true
-      http:
-        enabled: true
-        endpoint: http://victoria-logs-victoria-logs-single-server.victoria.svc.cluster.local.:9428/insert/opentelemetry/v1/logs
       grpc:
         enabled: true
         endpoint: tempo.tempo:4317
@@ -98,12 +63,6 @@ traefik:
 
   # experimental:
   #   plugins:
-  #     bouncer:
-  #       moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
-  #       version: v1.4.1
-  #     captcha-protect:
-  #       moduleName: github.com/libops/captcha-protect
-  #       version: v1.0.0
 
   providers:
     kubernetesIngress:
