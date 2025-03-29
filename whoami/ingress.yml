@@ -2,21 +2,23 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: whoami-ingress
+  namespace: whoami
   annotations:
-   cert-manager.io/cluster-issuer: letsencrypt-production
+    cert-manager.io/cluster-issuer: letsencrypt-production
 spec:
   ingressClassName: traefik
   tls:
-   - hosts:
-     - whoami.dellarteproductions.com
-     secretName: whoami-tls-production
+  - hosts:
+    - whoami.harpo.me
+    secretName: whoami-tls-production
   rules:
-  - http:
+  - host: whoami.harpo.me
+    http:
       paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: whoami
-            port:
-              name: web
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: whoami
+              port:
+                name: web
