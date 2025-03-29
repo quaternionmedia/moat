@@ -11,3 +11,4 @@ spec:
         - kind: Service
           name: whoami
           port: 80
+  tls: {}
