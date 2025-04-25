@@ -1,0 +1,9 @@
+apiVersion: v2
+name: authentik
+version: 0.0.2
+description: Identity provider
+appVersion: 2025.2.4
+dependencies:
+- name: authentik
+  repository: https://charts.goauthentik.io/
+  version: 2025.2.4

@@ -1,3 +1,4 @@
 apiVersion: v2
 name: technitium
-version: 0.0.1
+version: 0.0.2
+appVersion: 13.5.0
