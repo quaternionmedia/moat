@@ -1,0 +1,6 @@
+.env
+.*.hcl
+*.tfstate
+*.backup
+credentials.auto.tfvars
+.terraform/
