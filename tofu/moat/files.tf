@@ -12,7 +12,9 @@ resource "proxmox_virtual_environment_download_file" "talos_nocloud_image" {
   node_name    = "falcon"
 
   file_name = "talos-${local.talos.version}-nocloud-amd64.iso"
-  url       = "https://factory.talos.dev/image/74b14c6bce8dbecd928887731c64ceef5c0ecf9205059d44dbe92f66277edcff/v1.11.2/nocloud-amd64.iso"
-  # decompression_algorithm = "gz"
-  overwrite = false
+  url       = "https://factory.talos.dev/image/aeec243e3a4c2a14f9ba74b1a8c7662f03eea658a7ea5f1c26fdd491280c88f8/v1.11.2/nocloud-amd64.iso"
+  # overwrite = false
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }

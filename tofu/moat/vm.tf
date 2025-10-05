@@ -39,7 +39,7 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
     datastore_id = "local-lvm"
     ip_config {
       ipv4 {
-        address = "${var.talos_cp_01_ip_addr}/26"
+        address = "${var.talos_cp_01_ip_addr}/24"
         gateway = var.default_gateway
       }
       ipv6 {
@@ -47,6 +47,7 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
       }
     }
   }
+  timeout_create = 120
 }
 
 resource "proxmox_virtual_environment_vm" "talos_worker_01" {
@@ -54,7 +55,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
   name        = "talos-worker-01"
   description = "Managed by Terraform"
   tags        = ["terraform"]
-  node_name   = "<your proxmox node>"
+  node_name   = "falcon"
   on_boot     = true
 
   cpu {
@@ -98,4 +99,6 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
       }
     }
   }
+  timeout_create = 120
+
 }

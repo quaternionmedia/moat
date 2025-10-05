@@ -8,11 +8,17 @@ variable "default_gateway" {
   default = "192.168.50.1"
 }
 
-variable "moat_net" {
-  description = "The network where the Moat service will be deployed."
-  type        = string
-  default     = "192.168.50.64/26"
+variable "default_dns" {
+  type    = string
+  default = "192.168.50.1:53"
+
 }
+
+# variable "moat_net" {
+#   description = "The network where the Moat service will be deployed."
+#   type        = string
+#   default     = "192.168.50.64/26"
+# }
 
 variable "falcon_ip" {
   description = "The IP address of the Falcon server"
@@ -35,3 +41,4 @@ variable "talos_worker_01_ip_addr" {
   type    = string
   default = "192.168.50.65"
 }
+
