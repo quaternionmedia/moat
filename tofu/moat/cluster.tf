@@ -20,6 +20,13 @@ resource "talos_machine_configuration_apply" "cp_config_apply" {
   # count                       = 1
   node = var.talos_cp_01_ip_addr
 
+  config_patches = [
+    yamlencode({
+      cluster = {
+        allowSchedulingOnControlPlanes = true
+      }
+    })
+  ]
 }
 
 data "talos_machine_configuration" "machineconfig_worker" {

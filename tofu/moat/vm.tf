@@ -27,7 +27,7 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
     file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
     file_format  = "raw"
     interface    = "scsi0"
-    size         = 20
+    size         = 32
   }
 
   operating_system {
@@ -79,7 +79,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
     file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
     file_format  = "raw"
     interface    = "scsi0"
-    size         = 20
+    size         = 32
   }
 
   operating_system {
