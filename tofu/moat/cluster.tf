@@ -41,42 +41,38 @@ resource "talos_machine_bootstrap" "bootstrap" {
   depends_on           = [talos_machine_configuration_apply.cp_config_apply]
   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
   node                 = var.talos_cp_01_ip_addr
-  # endpoint             = "${var.talos_cp_01_ip_addr}:50000"
 
+}
+
+data "talos_cluster_health" "health" {
+  depends_on           = [talos_machine_configuration_apply.cp_config_apply, talos_machine_configuration_apply.worker_config_apply]
+  client_configuration = data.talos_client_configuration.talosconfig.client_configuration
+  control_plane_nodes  = [var.talos_cp_01_ip_addr]
+  worker_nodes         = [var.talos_worker_01_ip_addr]
+  # endpoints            = data.talos_client_configuration.talosconfig.endpoints
+  endpoints = [data.talos_machine_configuration.machineconfig_cp.cluster_endpoint]
   timeouts = {
-    create = "1m"
+    read = "5m"
   }
 
 }
 
-# data "talos_cluster_health" "health" {
-#   depends_on           = [talos_machine_configuration_apply.cp_config_apply, talos_machine_configuration_apply.worker_config_apply]
-#   client_configuration = data.talos_client_configuration.talosconfig.client_configuration
-#   control_plane_nodes  = [var.talos_cp_01_ip_addr]
-#   worker_nodes         = [var.talos_worker_01_ip_addr]
-#   # endpoints            = data.talos_client_configuration.talosconfig.endpoints
-#   endpoints = [data.talos_machine_configuration.machineconfig_cp.cluster_endpoint]
-#   timeouts = {
-#     read = "1m"
-#   }
-# }
+data "talos_cluster_kubeconfig" "kubeconfig" {
+  depends_on = [
+    talos_machine_bootstrap.bootstrap,
+    # data.talos_cluster_health.health
+  ]
 
-# data "talos_cluster_kubeconfig" "kubeconfig" {
-#   depends_on = [
-#     talos_machine_bootstrap.bootstrap,
-#     # data.talos_cluster_health.health
-#   ]
+  client_configuration = talos_machine_secrets.machine_secrets.client_configuration
+  node                 = var.talos_cp_01_ip_addr
+}
 
-#   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
-#   node                 = var.talos_cp_01_ip_addr
-# }
+output "talosconfig" {
+  value     = data.talos_client_configuration.talosconfig.talos_config
+  sensitive = true
+}
 
-# output "talosconfig" {
-#   value     = data.talos_client_configuration.talosconfig.talos_config
-#   sensitive = true
-# }
-
-# output "kubeconfig" {
-#   value     = data.talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw
-#   sensitive = true
-# }
+output "kubeconfig" {
+  value     = data.talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw
+  sensitive = true
+}

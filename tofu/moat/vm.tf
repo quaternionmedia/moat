@@ -1,9 +1,8 @@
-
 resource "proxmox_virtual_environment_vm" "talos_cp_01" {
   name        = "talos-cp-01"
   description = "Managed by Terraform"
   tags        = ["terraform"]
-  node_name   = "falcon"
+  node_name   = var.node_name
   on_boot     = true
 
   cpu {
@@ -27,7 +26,7 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
     datastore_id = "local-lvm"
     file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
     file_format  = "raw"
-    interface    = "virtio0"
+    interface    = "scsi0"
     size         = 20
   }
 
@@ -55,7 +54,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
   name        = "talos-worker-01"
   description = "Managed by Terraform"
   tags        = ["terraform"]
-  node_name   = "falcon"
+  node_name   = var.node_name
   on_boot     = true
 
   cpu {
@@ -79,7 +78,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
     datastore_id = "local-lvm"
     file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
     file_format  = "raw"
-    interface    = "virtio0"
+    interface    = "scsi0"
     size         = 20
   }
 

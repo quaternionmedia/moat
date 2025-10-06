@@ -3,6 +3,11 @@ variable "cluster_name" {
   default = "moat"
 }
 
+variable "node_name" {
+  type    = string
+  default = "falcon"
+}
+
 variable "default_gateway" {
   type    = string
   default = "192.168.50.1"
