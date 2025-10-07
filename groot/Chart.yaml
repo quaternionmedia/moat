@@ -1,5 +1,0 @@
-apiVersion: v2
-name: groot
-version: 0.0.2
-description: A bootstrapped Argo CD deployment
-home: https://github.com/quaternionmedia/moat

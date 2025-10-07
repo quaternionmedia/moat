@@ -55,14 +55,11 @@ traefik:
     serviceName: traefik
     
     otlp:
-      enabled: true
+      # enabled: true
       grpc:
         enabled: true
         endpoint: tempo.tempo:4317
         insecure: true
-
-  # experimental:
-  #   plugins:
 
   providers:
     kubernetesIngress:
