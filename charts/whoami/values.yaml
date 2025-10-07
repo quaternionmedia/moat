@@ -1,0 +1,29 @@
+app-template:
+  controllers:
+    whoami:
+      containers:
+        main:
+          image:
+            repository: traefik/whoami
+            tag: latest
+  service:
+    whoami:
+      controller: whoami
+      ports:
+        http:
+          port: 80
+          targetPort: 80
+  ingress:
+    whoami:
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-production
+      hosts:
+      - host: whoami.harpo.me
+        paths:
+        - path: /
+          service:
+            identifier: whoami
+      tls:
+      - hosts:
+        - whoami.harpo.me
+
