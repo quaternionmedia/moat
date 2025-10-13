@@ -1,7 +1,18 @@
 akri:
-  controller:
-    securityContext:
-      runAsUser: 0
-      allowPrivilegeEscalation: true
-      runAsNonRoot: false
-      readOnlyRootFilesystem: false
+  udev:
+    discovery:
+      enabled: true
+    configuration:
+      enabled: true
+      brokerPod:
+        image:
+          repository: ghcr.io/project-akri/akri/udev-video-broker
+          tag: latest
+          # pullPolicy: IfNotPresent
+      discoveryDetails:
+        groupRecursive: true
+        udevRules:
+        - name: Video4Linux2
+          content: KERNEL=="video[0-9]*", SUBSYSTEM=="video4linux", ENV{ID_V4L_CAPABILITIES}==":capture:", MODE="0666"
+        - name: Generic USB
+          content: KERNEL=="ttyUSB*", MODE="0666"
