@@ -1,0 +1,8 @@
+apiVersion: v2
+name: akri
+version: 0.0.1
+description: Device discovery and access for Kubernetes
+dependencies:
+- name: akri
+  repository: https://project-akri.github.io/akri
+  version: 0.13.8
