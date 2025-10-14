@@ -4,7 +4,7 @@ proxmox-csi-plugin:
     - url: https://192.168.50.2:8006/api2/json
       insecure: true
       token_id: 'kubernetes-csi@pve!csi'
-      # token_secret: ""
+      token_secret: ""
       region: moat
 
   # Deploy CSI controller only on control-plane nodes
