@@ -1,18 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: groot
-  namespace: argo-cd
+  name: traefik
+  namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/quaternionmedia/moat.git
-    path: groot
+    path: charts/traefik
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
-    namespace: groot
+    namespace: traefik
   syncPolicy:
     automated:
       selfHeal: true
       prune: true
+    syncOptions:
+    - CreateNamespace=true

@@ -1,0 +1,37 @@
+home-assistant:
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-production
+    hosts:
+    - host: home.harpo.me
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+    tls:
+    - secretName: home-hass-tls
+      hosts:
+      - home.harpo.me
+  addons:
+    codeserver:
+      enabled: true
+      ingress:
+        enabled: true
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-production
+        hosts:
+        - host: code.harpo.me
+          paths:
+          - path: /
+            pathType: ImplementationSpecific
+        tls:
+        - secretName: code-server-tls
+          hosts:
+          - code.harpo.me
+  configuration:
+    enabled: true
+    trusted_proxies:
+    - 192.168.50.0/24

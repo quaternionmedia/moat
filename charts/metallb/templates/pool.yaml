@@ -3,5 +3,5 @@ kind: IPAddressPool
 metadata:
   name: internal-pool
 spec:
-  addresses: 
-    - 192.168.50.10/31
+  addresses:
+  - 192.168.50.66/31

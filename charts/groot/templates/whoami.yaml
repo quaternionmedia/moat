@@ -1,19 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: metallb
-  namespace: argo-cd
+  name: whoami
+  namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/quaternionmedia/moat.git
-    path: metallb
+    path: charts/whoami
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
-    namespace: metallb
+    namespace: whoami
   syncPolicy:
     automated:
       selfHeal: true
       prune: true
- 
+    syncOptions:
+    - CreateNamespace=true
