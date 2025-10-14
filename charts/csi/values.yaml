@@ -1,0 +1,28 @@
+proxmox-csi-plugin:
+  config:
+    clusters:
+    - url: https://192.168.50.2:8006/api2/json
+      insecure: true
+      token_id: 'kubernetes-csi@pve!csi'
+      # token_secret: ""
+      region: moat
+
+  # Deploy CSI controller only on control-plane nodes
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    effect: NoSchedule
+
+  storageClass:
+  - name: proxmox-data-xfs
+    storage: local-lvm
+    reclaimPolicy: Delete
+    fstype: xfs
+  - name: proxmox-data
+    storage: local-lvm
+    reclaimPolicy: Delete
+    fstype: ext4
+    cache: writethrough
+    annotations:
+      storageclass.kubernetes.io/is-default-class: 'true'
