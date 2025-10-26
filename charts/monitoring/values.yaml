@@ -1,0 +1,11 @@
+grafana:
+  # initChownData:
+  #   enabled: false
+  persistence:
+    enabled: true
+
+prometheus:
+  server:
+    retention: 1y
+    # remoteWrite:
+    # - url: http://mimir-nginx.mimir/api/v1/push

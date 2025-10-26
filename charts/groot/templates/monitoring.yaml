@@ -1,19 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: prometheus
-  namespace: argo-cd
+  name: monitoring
+  namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/quaternionmedia/moat.git
-    path: prometheus
+    path: charts/monitoring
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
-    namespace: prometheus
+    namespace: monitoring
   syncPolicy:
     automated:
       selfHeal: true
       prune: true
-    createNamespace: true
+    syncOptions:
+    - CreateNamespace=true
