@@ -1,0 +1,58 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: go2rtc
+  labels:
+    app: go2rtc
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go2rtc
+  template:
+    metadata:
+      labels:
+        app: go2rtc
+    spec:
+      containers:
+      - name: go2rtc
+        image: alexxit/go2rtc
+        ports:
+        - name: rtsp
+          containerPort: 8554
+        - name: api
+          containerPort: 1984
+        - name: webrtc
+          containerPort: 8555
+        - name: rtmp
+          containerPort: 1935
+        volumeMounts:
+        - name: go2rtc-config
+          mountPath: /config
+      volumes:
+      - name: go2rtc-config
+        configMap:
+          name: go2rtc-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go2rtc
+
+spec:
+  ports:
+  - name: rtsp
+    port: 8554
+    targetPort: rtsp
+  - name: rtmp
+    port: 1935
+    targetPort: rtmp
+  - name: webrtc
+    port: 8555
+    targetPort: webrtc
+  - name: api
+    port: 1984
+    targetPort: api
+  selector:
+    app: go2rtc
