@@ -1,0 +1,153 @@
+frigate:
+  image:
+    repository: ghcr.io/blakeblackshear/frigate
+    tag: 0.16.2
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-production
+    hosts:
+    - host: video.harpo.me
+      paths:
+      - path: /
+        portName: http
+    tls:
+    - secretName: frigate-tls-production
+      hosts:
+      - video.harpo.me
+  persistence:
+    media:
+      enabled: true
+      size: 1Gi
+  config: |
+    mqtt:
+      enabled: false
+
+    record:
+      enabled: true
+      retain:
+        days: 7
+        mode: motion
+      detections:
+        retain:
+          days: 30
+          mode: motion
+      # export:
+      #   timelapse_args: "-vf setpts=PTS/60"
+
+    timestamp_style:
+      format: '%Y-%m-%d %H:%M:%S %Z'
+      position: br
+
+    snapshots:
+      enabled: false
+
+    audio:
+      enabled: true
+      max_not_heard: 30
+      min_volume: 500
+      listen:
+        - bark
+        - fire_alarm
+        - scream
+        - speech
+        - yell
+      filters:
+        speech:
+          threshold: 0.8
+
+    cameras:
+      HOffice:
+        enabled: true
+        audio:
+          enabled: true
+        ffmpeg:
+          input_args: preset-rtmp-generic
+          inputs:
+            - path: rtmp://go2rtc/HOffice
+              roles:
+                - audio
+                - detect
+                - record
+
+        detect:
+          enabled: true
+        # zones:
+        #   - name: "HOffice"
+
+      Laboratory:
+        enabled: true
+        audio:
+          enabled: true
+        ffmpeg:
+          input_args: preset-rtsp-generic
+          hwaccel_args: []
+          inputs:
+            - path: rtsp://go2rtc/Laboratory
+              roles:
+                - detect
+                - record
+                - audio
+
+        detect:
+          enabled: true
+
+    detect:
+      enabled: true
+      width: 640
+      height: 480
+      fps: 5
+
+    motion:
+      enabled: true
+
+    objects:
+      track:
+        - person
+        - cat
+        - dog
+        - bird
+        - car
+        - cell phone
+        - eye glasses
+        - wine glass
+        - cup
+        - chair
+        - knife
+        - fork
+        - spoon
+        - scissors
+        - bowl
+        - book
+
+    review:
+      alerts:
+        labels:
+          - person
+      detections:
+        labels:
+          - person
+          - car
+          - cat
+          - dog
+          - hat
+          - eye glasses
+          - cell phone
+          - cup
+          - chair
+          - desk
+          - window
+          - book
+          - scissors
+
+    ui:
+      timezone: America/Los_Angeles
+    camera_groups:
+      Garage:
+        order: 1
+        icon: LuWarehouse
+        cameras: Laboratory
+      Inside:
+        order: 2
+        icon: LuHome
+        cameras: HOffice
