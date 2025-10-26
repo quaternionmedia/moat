@@ -5,13 +5,18 @@ argo-cd:
       prometheus.io/scrape: 'true'
       prometheus.io/port: '8083'
       prometheus.io/path: /metrics
-  dex:
-    enabled: false
-  notifications:
-    enabled: false  
   server:
-    extraArgs:
-      - --insecure
+    ingress:
+      enabled: true
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-production
+      hostname: cd.harpo.me
+      extraTls:
+      - hosts:
+        - cd.harpo.me
+        secretName: argocd-server-tls-production
   configs:
     cm:
       kustomize.buildOptions: --enable-helm
+    params:
+      server.insecure: true
