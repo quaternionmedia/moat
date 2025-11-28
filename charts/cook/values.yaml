@@ -1,0 +1,33 @@
+app-template:
+  controllers:
+    cook:
+      containers:
+        main:
+          image:
+            repository: inigochoa/cookcli
+            tag: latest
+  service:
+    cook:
+      controller: cook
+      ports:
+        http:
+          port: 80
+          targetPort: 9080
+  ingress:
+    cook:
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-production
+      hosts:
+      - host: cook.harpo.me
+        paths:
+        - path: /
+          service:
+            identifier: cook
+      tls:
+      - hosts:
+        - cook.harpo.me
+  persistence:
+    recipes:
+      enabled: true
+      storageClass: proxmox-data-xfs
+      size: 1Gi

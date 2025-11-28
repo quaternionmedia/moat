@@ -1,4 +1,16 @@
 jellyfin:
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-production
+    hosts:
+    - host: watch.harpo.me
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+  persistence:
+    media:
+      storageClass: proxmox-data-xfs
   securityContext:
     capabilities:
       add:
