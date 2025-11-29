@@ -1,9 +1,0 @@
-apiVersion: v2
-name: minio
-version: 0.0.1
-description: MinIO object storage tenant
-appVersion: 7.0.1
-dependencies:
-- name: tenant
-  repository: https://operator.min.io/
-  version: 7.0.1

@@ -29,5 +29,6 @@ app-template:
   persistence:
     recipes:
       enabled: true
+      accessMode: ReadWriteOnce
       storageClass: proxmox-data-xfs
       size: 1Gi
