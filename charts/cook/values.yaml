@@ -24,7 +24,8 @@ app-template:
           service:
             identifier: cook
       tls:
-      - hosts:
+      - secretName: cook-tls
+        hosts:
         - cook.harpo.me
   persistence:
     recipes:
