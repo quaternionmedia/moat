@@ -1,8 +1,11 @@
 apiVersion: v2
 name: frigate
-version: 0.1.0
+version: 0.2.0
 appVersion: 0.16.2
 dependencies:
 - name: frigate
   repository: https://blakeblackshear.github.io/blakeshome-charts/
   version: 7.8.0
+- name: app-template
+  version: 4.4.0
+  repository: https://bjw-s-labs.github.io/helm-charts

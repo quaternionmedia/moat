@@ -1,3 +1,46 @@
+app-template:
+  controllers:
+    go2rtc:
+      containers:
+        main:
+          image:
+            repository: alexxit/go2rtc
+            tag: latest
+  service:
+    rtmp:
+      controller: go2rtc
+      ports:
+        rtmp: 
+          port: 1935
+        rtsp:
+          port: 8554
+        webrtc:
+          port: 8555
+        api:
+          port: 1984
+  configMaps:
+    go2rtc-config:
+      data:
+        go2rtc.yaml: |
+          webrtc:
+            listen: :8555
+          api:
+            listen: :1984
+          rtmp:
+            enabled: true
+            listen: :1935
+          rtsp:
+            listen: :8554
+
+          streams:
+            HOffice: null
+            Laboratory: null
+  persistence:
+    config:
+      enabled: true
+      type: configMap
+      identifier: go2rtc-config
+     
 frigate:
   image:
     repository: ghcr.io/blakeblackshear/frigate
@@ -18,7 +61,7 @@ frigate:
   persistence:
     media:
       enabled: true
-      size: 1Gi
+      size: 128Gi
   config: |
     mqtt:
       enabled: false
