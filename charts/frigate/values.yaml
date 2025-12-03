@@ -126,7 +126,7 @@ frigate:
         ffmpeg:
           input_args: preset-rtmp-generic
           inputs:
-            - path: rtmp://go2rtc/HOffice
+            - path: rtmp://frigate-go2rtc/HOffice
               roles:
                 - audio
                 - detect
@@ -145,7 +145,7 @@ frigate:
           input_args: preset-rtsp-generic
           hwaccel_args: []
           inputs:
-            - path: rtsp://go2rtc/Laboratory
+            - path: rtsp://frigate-go2rtc/Laboratory
               roles:
                 - detect
                 - record
