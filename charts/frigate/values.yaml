@@ -7,7 +7,7 @@ app-template:
             repository: alexxit/go2rtc
             tag: latest
   service:
-    rtmp:
+    go2rtc:
       controller: go2rtc
       ports:
         rtmp: 
@@ -40,6 +40,20 @@ app-template:
       enabled: true
       type: configMap
       identifier: go2rtc-config
+  ingress:
+    rtmp:
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-production
+      hosts:
+      - host: rtmp.harpo.me
+        paths:
+        - path: /
+          service:
+            identifier: go2rtc
+            port: rtmp
+      tls:
+      - hosts:
+        - rtmp.harpo.me
      
 frigate:
   image:
