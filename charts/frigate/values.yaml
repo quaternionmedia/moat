@@ -1,6 +1,7 @@
 app-template:
   controllers:
     go2rtc:
+      suffix: go2rtc
       containers:
         main:
           image:
@@ -8,6 +9,7 @@ app-template:
             tag: latest
   service:
     go2rtc:
+      suffix: go2rtc
       controller: go2rtc
       ports:
         rtmp: 
@@ -20,6 +22,7 @@ app-template:
           port: 1984
   configMaps:
     go2rtc-config:
+      suffix: go2rtc
       data:
         go2rtc.yaml: |
           webrtc:
@@ -42,6 +45,7 @@ app-template:
       identifier: go2rtc-config
   ingress:
     rtmp:
+      suffix: rtmp
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-production
       hosts:
