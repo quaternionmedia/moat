@@ -10,7 +10,7 @@ variable "node_name" {
 
 variable "default_gateway" {
   type    = string
-  default = "192.168.50.1"
+  default = "192.168.50.0"
 }
 
 variable "default_dns" {

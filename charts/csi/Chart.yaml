@@ -1,10 +1,10 @@
 apiVersion: v2
 name: csi
-version: 0.1.0
+version: 0.1.1
 appVersion: v0.16.0
 description: Proxmox CSI Driver for Kubernetes
 home: https://github.com/quaternionmedia/moat
 dependencies:
 - name: proxmox-csi-plugin
-  version: 0.5.1
+  version: 0.18.0
   repository: oci://ghcr.io/sergelogvinov/charts

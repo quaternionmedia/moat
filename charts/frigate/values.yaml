@@ -63,7 +63,7 @@ app-template:
 frigate:
   image:
     repository: ghcr.io/blakeblackshear/frigate
-    tag: 0.16.2
+    tag: 0.16.4
   ingress:
     enabled: true
     annotations:
