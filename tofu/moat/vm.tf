@@ -6,12 +6,12 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
   on_boot     = true
 
   cpu {
-    cores = 2
+    cores = 4
     type  = "x86-64-v2-AES"
   }
 
   memory {
-    dedicated = 4096
+    dedicated = 8192
   }
 
   agent {
@@ -19,7 +19,9 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
   }
 
   network_device {
-    bridge = "vmbr0"
+    bridge = "vmbr1"
+    # vlan_id = 50
+
   }
 
   disk {
@@ -27,11 +29,11 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
     file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
     file_format  = "raw"
     interface    = "scsi0"
-    size         = 32
+    size         = 64
   }
 
   operating_system {
-    type = "l26" # Linux Kernel 2.6 - 5.X.
+    type = "l26" # Linux Kernel 2.6 - 6.X.
   }
 
   initialization {
@@ -63,7 +65,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
   }
 
   memory {
-    dedicated = 4096
+    dedicated = 8192
   }
 
   agent {
@@ -71,7 +73,8 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
   }
 
   network_device {
-    bridge = "vmbr0"
+    bridge = "vmbr1"
+    # vlan_id = 50
   }
 
   disk {
@@ -79,7 +82,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
     file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
     file_format  = "raw"
     interface    = "scsi0"
-    size         = 32
+    size         = 64
   }
 
   operating_system {

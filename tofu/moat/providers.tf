@@ -11,7 +11,7 @@ terraform {
   }
 }
 provider "proxmox" {
-  endpoint = "https://192.168.50.2:8006/"
+  endpoint = "https://${var.falcon_ip}/"
   insecure = true
   ssh {
     agent = true

@@ -62,7 +62,7 @@ resource "talos_machine_bootstrap" "bootstrap" {
 #   }
 # }
 
-data "talos_cluster_kubeconfig" "kubeconfig" {
+resource "talos_cluster_kubeconfig" "kubeconfig" {
   depends_on = [
     talos_machine_bootstrap.bootstrap,
     # data.talos_cluster_health.health
@@ -78,6 +78,6 @@ output "talosconfig" {
 }
 
 output "kubeconfig" {
-  value     = data.talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw
+  value     = resource.talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw
   sensitive = true
 }

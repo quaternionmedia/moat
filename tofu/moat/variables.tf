@@ -28,7 +28,7 @@ variable "default_dns" {
 variable "falcon_ip" {
   description = "The IP address of the Falcon server"
   type        = string
-  default     = "192.168.50.2:8006"
+  default     = "192.168.1.10:8006"
 }
 
 variable "proxmox_api_endpoint" {
