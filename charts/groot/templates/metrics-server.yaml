@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/quaternionmedia/moat.git
+    repoURL: git@github.com:quaternionmedia/moat.git
     path: charts/metrics-server
     targetRevision: HEAD
   destination:
