@@ -1,0 +1,9 @@
+apiVersion: v2
+name: cilium
+version: 0.0.1
+appVersion: v1.19.1
+description: CNI plugin for Kubernetes
+dependencies:
+- name: cilium
+  repository: https://helm.cilium.io/
+  version: 1.19.1
