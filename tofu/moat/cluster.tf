@@ -1,16 +1,16 @@
 resource "talos_machine_secrets" "machine_secrets" {}
 
-data "talos_client_configuration" "talosconfig" {
-  cluster_name         = var.cluster_name
-  client_configuration = talos_machine_secrets.machine_secrets.client_configuration
-  nodes                = [var.talos_cp_01_ip_addr]
-}
-
 data "talos_machine_configuration" "machineconfig_cp" {
   cluster_name     = var.cluster_name
   machine_type     = "controlplane"
   cluster_endpoint = "https://${var.talos_cp_01_ip_addr}:6443"
   machine_secrets  = talos_machine_secrets.machine_secrets.machine_secrets
+}
+
+data "talos_client_configuration" "talosconfig" {
+  cluster_name         = var.cluster_name
+  client_configuration = talos_machine_secrets.machine_secrets.client_configuration
+  nodes                = [var.talos_cp_01_ip_addr]
 }
 
 resource "talos_machine_configuration_apply" "cp_config_apply" {
@@ -24,6 +24,14 @@ resource "talos_machine_configuration_apply" "cp_config_apply" {
     yamlencode({
       cluster = {
         allowSchedulingOnControlPlanes = true
+        network = {
+          cni = {
+            name = "none"
+          }
+        }
+        proxy = {
+          disabled = true
+        }
       }
     })
   ]

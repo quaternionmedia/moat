@@ -1,7 +1,7 @@
 resource "proxmox_virtual_environment_vm" "talos_cp_01" {
   name        = "talos-cp-01"
   description = "Managed by Terraform"
-  tags        = ["terraform"]
+  tags        = ["terraform", "moat", "talos", "k8s", "control-plane"]
   node_name   = var.node_name
   on_boot     = true
 
@@ -19,9 +19,9 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
   }
 
   network_device {
-    bridge = "vmbr1"
-    # vlan_id = 50
-
+    bridge      = "vmbr1"
+    vlan_id     = 8
+    mac_address = "BC:24:11:27:2A:B2"
   }
 
   disk {
@@ -38,14 +38,17 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
 
   initialization {
     datastore_id = "local-lvm"
+    dns {
+      servers = [var.default_dns]
+    }
     ip_config {
       ipv4 {
         address = "${var.talos_cp_01_ip_addr}/24"
         gateway = var.default_gateway
       }
-      ipv6 {
-        address = "dhcp"
-      }
+      # ipv6 {
+      #   address = "dhcp"
+      # }
     }
   }
   timeout_create = 120
@@ -55,7 +58,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
   depends_on  = [proxmox_virtual_environment_vm.talos_cp_01]
   name        = "talos-worker-01"
   description = "Managed by Terraform"
-  tags        = ["terraform"]
+  tags        = ["terraform", "moat", "talos", "k8s", "worker"]
   node_name   = var.node_name
   on_boot     = true
 
@@ -73,8 +76,9 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
   }
 
   network_device {
-    bridge = "vmbr1"
-    # vlan_id = 50
+    bridge      = "vmbr1"
+    vlan_id     = 8
+    mac_address = "BC:24:11:85:D9:5A"
   }
 
   disk {
@@ -91,14 +95,17 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
 
   initialization {
     datastore_id = "local-lvm"
+    dns {
+      servers = [var.default_dns]
+    }
     ip_config {
       ipv4 {
         address = "${var.talos_worker_01_ip_addr}/24"
         gateway = var.default_gateway
       }
-      ipv6 {
-        address = "dhcp"
-      }
+      # ipv6 {
+      #   address = "dhcp"
+      # }
     }
   }
   timeout_create = 120

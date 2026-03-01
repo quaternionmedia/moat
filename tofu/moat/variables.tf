@@ -10,12 +10,12 @@ variable "node_name" {
 
 variable "default_gateway" {
   type    = string
-  default = "192.168.50.0"
+  default = "10.8.0.1"
 }
 
 variable "default_dns" {
   type    = string
-  default = "192.168.50.1:53"
+  default = "192.168.50.1"
 
 }
 
@@ -39,11 +39,11 @@ variable "proxmox_api_endpoint" {
 
 variable "talos_cp_01_ip_addr" {
   type    = string
-  default = "192.168.50.64"
+  default = "10.8.0.100"
 }
 
 variable "talos_worker_01_ip_addr" {
   type    = string
-  default = "192.168.50.65"
+  default = "10.8.0.101"
 }
 

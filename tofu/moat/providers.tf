@@ -2,7 +2,7 @@ terraform {
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
-      version = "0.95.1-rc1"
+      version = "0.97.1"
     }
     talos = {
       source  = "siderolabs/talos"

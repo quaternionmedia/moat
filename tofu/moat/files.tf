@@ -1,8 +1,10 @@
 
 locals {
   talos = {
-    version      = "v1.11.2"
+    version      = "v1.12.4"
+    platform     = "nocloud"
     architecture = "amd64"
+    schematic_id = "4d2f14467f85468b6b5ff0ba1747f7f0bcb97d351d516db0197885247093d6fd"
   }
 }
 
@@ -11,8 +13,8 @@ resource "proxmox_virtual_environment_download_file" "talos_nocloud_image" {
   datastore_id = "local"
   node_name    = "falcon"
 
-  file_name = "talos-${local.talos.version}-nocloud-amd64.iso"
-  url       = "https://factory.talos.dev/image/aeec243e3a4c2a14f9ba74b1a8c7662f03eea658a7ea5f1c26fdd491280c88f8/v1.11.2/nocloud-amd64.iso"
+  file_name = "talos-${local.talos.version}-${local.talos.platform}-${local.talos.architecture}.iso"
+  url       = "https://factory.talos.dev/image/${local.talos.schematic_id}/${local.talos.version}/${local.talos.platform}-${local.talos.architecture}.iso"
 
   lifecycle {
     # prevent_destroy = true
