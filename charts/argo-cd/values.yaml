@@ -1,10 +1,4 @@
 argo-cd:
-  global:
-    addPrometheusAnnotations: true
-    podAnnotations:
-      prometheus.io/scrape: 'true'
-      prometheus.io/port: '8083'
-      prometheus.io/path: /metrics
   server:
     ingress:
       enabled: true
@@ -16,7 +10,11 @@ argo-cd:
         - cd.harpo.me
         secretName: argocd-server-tls-production
   configs:
-    cm:
-      kustomize.buildOptions: --enable-helm
-    params:
-      server.insecure: true
+    repositories:
+      moat-git:
+        name: moat-git
+        url: git@github.com:quaternionmedia/moat.git
+        # type: git
+    credentialTemplates:
+      moat-git-ssh:
+        url: git@github.com
