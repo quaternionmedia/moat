@@ -127,87 +127,11 @@ frigate:
         enabled: true
         audio:
           enabled: true
-        ffmpeg:
-          input_args: preset-rtsp-generic
         onvif:
           host: 10.11.0.153
           port: 80
           user: frigate
           password: frigate
-
-      Moat-Back:
-        enabled: true
-        audio:
-          enabled: true
-        ffmpeg:
-          input_args: preset-rtsp-generic
-          hwaccel_args: []
-          inputs:
-          - path: rtsp://frigate-go2rtc/Moat-Back
-            roles:
-            - detect
-            - record
-            - audio
-      Moat-Driveway:
-        enabled: true
-        audio:
-          enabled: true
-        ffmpeg:
-          input_args: preset-rtsp-generic
-          hwaccel_args: []
-          inputs:
-          - path: rtsp://frigate-go2rtc/Moat-Driveway
-            roles:
-            - detect
-            - record
-            - audio
-      Moat-Fence:
-        enabled: true
-        audio:
-          enabled: true
-        ffmpeg:
-          input_args: preset-rtsp-generic
-          hwaccel_args: []
-          inputs:
-          - path: rtsp://frigate-go2rtc/Moat-Fence
-            roles:
-            - detect
-            - record
-            - audio
-      HOffice:
-        enabled: true
-        audio:
-          enabled: true
-        ffmpeg:
-          input_args: preset-rtmp-generic
-          inputs:
-          - path: rtmp://frigate-go2rtc/HOffice
-            roles:
-            - audio
-            - detect
-            - record
-
-        detect:
-          enabled: true
-        # zones:
-        #   - name: "HOffice"
-
-      Laboratory:
-        enabled: true
-        audio:
-          enabled: true
-        ffmpeg:
-          input_args: preset-rtsp-generic
-          hwaccel_args: []
-          inputs:
-          - path: rtsp://frigate-go2rtc/Laboratory
-            roles:
-            - detect
-            - record
-            - audio
-
-        detect:
-          enabled: true
 
     detect:
       enabled: true
