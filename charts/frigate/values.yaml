@@ -63,7 +63,7 @@ app-template:
 frigate:
   image:
     repository: ghcr.io/blakeblackshear/frigate
-    tag: 0.16.4
+    tag: 0.17.0
   ingress:
     enabled: true
     annotations:
@@ -87,8 +87,10 @@ frigate:
 
     record:
       enabled: true
-      retain:
-        days: 7
+      motion:
+        days: 3
+      alerts:
+        days: 10
         mode: motion
       detections:
         retain:
@@ -102,23 +104,76 @@ frigate:
       position: br
 
     snapshots:
-      enabled: false
+      enabled: true
+      retain:
+        default: 10
 
     audio:
       enabled: true
       max_not_heard: 30
       min_volume: 500
       listen:
-        - bark
-        - fire_alarm
-        - scream
-        - speech
-        - yell
+      - bark
+      - fire_alarm
+      - scream
+      - speech
+      - yell
       filters:
         speech:
           threshold: 0.8
 
     cameras:
+      moat-front:
+        enabled: true
+        audio:
+          enabled: true
+        ffmpeg:
+          input_args: preset-rtsp-generic
+        onvif:
+          host: 10.11.0.153
+          port: 80
+          user: frigate
+          password: frigate
+
+      Moat-Back:
+        enabled: true
+        audio:
+          enabled: true
+        ffmpeg:
+          input_args: preset-rtsp-generic
+          hwaccel_args: []
+          inputs:
+          - path: rtsp://frigate-go2rtc/Moat-Back
+            roles:
+            - detect
+            - record
+            - audio
+      Moat-Driveway:
+        enabled: true
+        audio:
+          enabled: true
+        ffmpeg:
+          input_args: preset-rtsp-generic
+          hwaccel_args: []
+          inputs:
+          - path: rtsp://frigate-go2rtc/Moat-Driveway
+            roles:
+            - detect
+            - record
+            - audio
+      Moat-Fence:
+        enabled: true
+        audio:
+          enabled: true
+        ffmpeg:
+          input_args: preset-rtsp-generic
+          hwaccel_args: []
+          inputs:
+          - path: rtsp://frigate-go2rtc/Moat-Fence
+            roles:
+            - detect
+            - record
+            - audio
       HOffice:
         enabled: true
         audio:
@@ -126,11 +181,11 @@ frigate:
         ffmpeg:
           input_args: preset-rtmp-generic
           inputs:
-            - path: rtmp://frigate-go2rtc/HOffice
-              roles:
-                - audio
-                - detect
-                - record
+          - path: rtmp://frigate-go2rtc/HOffice
+            roles:
+            - audio
+            - detect
+            - record
 
         detect:
           enabled: true
@@ -145,11 +200,11 @@ frigate:
           input_args: preset-rtsp-generic
           hwaccel_args: []
           inputs:
-            - path: rtsp://frigate-go2rtc/Laboratory
-              roles:
-                - detect
-                - record
-                - audio
+          - path: rtsp://frigate-go2rtc/Laboratory
+            roles:
+            - detect
+            - record
+            - audio
 
         detect:
           enabled: true
@@ -165,42 +220,42 @@ frigate:
 
     objects:
       track:
-        - person
-        - cat
-        - dog
-        - bird
-        - car
-        - cell phone
-        - eye glasses
-        - wine glass
-        - cup
-        - chair
-        - knife
-        - fork
-        - spoon
-        - scissors
-        - bowl
-        - book
+      - person
+      - cat
+      - dog
+      - bird
+      - car
+      - cell phone
+      - eye glasses
+      - wine glass
+      - cup
+      - chair
+      - knife
+      - fork
+      - spoon
+      - scissors
+      - bowl
+      - book
 
     review:
       alerts:
         labels:
-          - person
+        - person
       detections:
         labels:
-          - person
-          - car
-          - cat
-          - dog
-          - hat
-          - eye glasses
-          - cell phone
-          - cup
-          - chair
-          - desk
-          - window
-          - book
-          - scissors
+        - person
+        - car
+        - cat
+        - dog
+        - hat
+        - eye glasses
+        - cell phone
+        - cup
+        - chair
+        - desk
+        - window
+        - book
+        - scissors
 
     ui:
       timezone: America/Los_Angeles
