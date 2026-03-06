@@ -87,11 +87,12 @@ frigate:
 
     record:
       enabled: true
-      motion:
+      continuous:
         days: 3
       alerts:
-        days: 10
-        mode: motion
+        retain:
+          days: 15
+          mode: motion
       detections:
         retain:
           days: 30
@@ -127,6 +128,14 @@ frigate:
         enabled: true
         audio:
           enabled: true
+        ffmpeg:
+          input_args: preset-rtsp-generic
+          inputs:
+          - path: rtsp://frigate:frigate@10.11.0.153:80/axis-media/media.amp
+            roles:
+            - audio
+            - detect
+            - record
         onvif:
           host: 10.11.0.153
           port: 80
