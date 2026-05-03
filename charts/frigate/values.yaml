@@ -63,7 +63,7 @@ app-template:
 frigate:
   image:
     repository: ghcr.io/blakeblackshear/frigate
-    tag: 0.17.0
+    tag: 0.17.1
   ingress:
     enabled: true
     annotations:
@@ -81,14 +81,38 @@ frigate:
     media:
       enabled: true
       size: 128Gi
+    config:
+      enabled: true
+      ephemeralWritableConfigYaml: true
   config: |
     mqtt:
       enabled: false
+    
+    audio:
+      enabled: true
+      max_not_heard: 30
+      min_volume: 500
+      listen:
+      - bark
+      - fire_alarm
+      - scream
+      - speech
+      - yell
+      filters:
+        speech:
+          threshold: 0.8
+
+    detect:
+      enabled: True
+    motion:
+      enabled: True
 
     record:
-      enabled: true
+      enabled: True
       continuous:
         days: 3
+      motion:
+        days: 15
       alerts:
         retain:
           days: 15
@@ -109,20 +133,6 @@ frigate:
       retain:
         default: 10
 
-    audio:
-      enabled: true
-      max_not_heard: 30
-      min_volume: 500
-      listen:
-      - bark
-      - fire_alarm
-      - scream
-      - speech
-      - yell
-      filters:
-        speech:
-          threshold: 0.8
-
     cameras:
       moat-front:
         enabled: true
@@ -131,26 +141,26 @@ frigate:
         ffmpeg:
           input_args: preset-rtsp-generic
           inputs:
-          - path: rtsp://frigate:frigate@10.11.0.153:80/axis-media/media.amp
+          - path: rtsp://moat0:qwertyui@10.31.0.153/axis-media/media.amp
             roles:
             - audio
             - detect
             - record
         onvif:
-          host: 10.11.0.153
+          host: 10.31.0.153
           port: 80
           user: frigate
           password: frigate
-
-    detect:
-      enabled: true
-      width: 640
-      height: 480
-      fps: 5
-
-    motion:
-      enabled: true
-
+          # ignore_time_mismatch: True
+          autotracking:
+            enabled: True
+            zooming: relative
+            required_zones:
+            - full
+        zones:
+          full:
+            friendly_name: full frame
+            coordinates: 0,0,0,1,1,1,1,0
     objects:
       track:
       - person
@@ -193,11 +203,15 @@ frigate:
     ui:
       timezone: America/Los_Angeles
     camera_groups:
-      Garage:
+      Moat:
+        order: 0
+        icon: LuCctv
+        cameras: moat-front
+      Lab:
         order: 1
         icon: LuWarehouse
         cameras: Laboratory
-      Inside:
+      Castle:
         order: 2
-        icon: LuHome
+        icon: LuCastle
         cameras: HOffice
