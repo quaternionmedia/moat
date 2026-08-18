@@ -141,7 +141,9 @@ frigate:
         ffmpeg:
           input_args: preset-rtsp-generic
           inputs:
-          - path: rtsp://moat0:qwertyui@10.31.0.153/axis-media/media.amp
+          # Credentials must NOT be committed. Inject via a Kubernetes Secret at
+          # deploy time, e.g. rtsp://${CAM_USER}:${CAM_PASS}@10.31.0.153/...
+          - path: rtsp://10.31.0.153/axis-media/media.amp
             roles:
             - audio
             - detect
@@ -149,8 +151,9 @@ frigate:
         onvif:
           host: 10.31.0.153
           port: 80
-          user: frigate
-          password: frigate
+          # Set user/password from a Secret at deploy time, not in-tree.
+          user: ""
+          password: ""
           # ignore_time_mismatch: True
           autotracking:
             enabled: True

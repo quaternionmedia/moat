@@ -44,12 +44,13 @@ loki:
         ruler: loki-ruler
         admin: loki-admin
       s3:
-        s3: http://C9LqENA4K9HbwYO79U6y:sVHgwClMflLX2WDwcCWS7dMN6j6WvNQyQagerVdz@minio.minio
+        # Credentials must NOT be committed. Provide them at deploy time via a
+        # Kubernetes Secret / SOPS / sealed-secret, e.g.:
+        #   s3: http://${ACCESS_KEY}:${SECRET_KEY}@minio.minio
+        s3: http://minio.minio
         # endpoint: http://minio.minio
         insecure: true
         s3ForcePathStyle: true
-        # accessKeyId: C9LqENA4K9HbwYO79U6y
-        # secretAccessKey: sVHgwClMflLX2WDwcCWS7dMN6j6WvNQyQagerVdz
 
   backend:
     replicas: 0
