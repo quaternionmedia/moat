@@ -33,10 +33,10 @@ cd moat
 ```
 
 ### Bootstrap
-Use the `/groot` chart to bootstrap the cluster
+Use the `charts/groot` chart to bootstrap the cluster
 
 ```sh
-kubectl create ns argo-cd
-helm install argo-cd argo-cd/ -n argo-cd
-helm template groot/ | k apply -f  -
+kubectl create ns argocd
+helm install argo-cd charts/argo-cd/ -n argocd
+helm template charts/groot/ | kubectl apply -f -
 ```

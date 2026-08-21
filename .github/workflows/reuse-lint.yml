@@ -1,0 +1,30 @@
+name: reuse-lint
+# Validate REUSE compliance (licensing, SPDX headers)
+# Runs on every PR to check all files have proper license attribution
+
+on:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install REUSE
+        run: pip install reuse
+
+      - name: Run reuse lint
+        run: reuse lint
+
+      - name: Comment on PR if issues
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "❌ REUSE compliance failed. Check the workflow output above. Files must have SPDX headers."
+            })

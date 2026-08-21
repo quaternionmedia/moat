@@ -1,0 +1,47 @@
+# REUSE configuration for moat project
+# See: https://reuse.software/spec/
+
+version = 1
+SPDX-Version = "SPDX-2.3"
+SPDX-DataLicense = "CC0-1.0"
+
+# Default annotation: Apache-2.0 for all source files
+[[annotations]]
+path = ["**/*.py", "**/*.sh", "**/*.go", "**/*.rs", "**/*.js", "**/*.ts"]
+SPDX-FileCopyrightText = "Quaternion Media"
+SPDX-License-Identifier = "Apache-2.0"
+
+# Configuration and documentation
+[[annotations]]
+path = ["**/*.md", "**/*.yaml", "**/*.yml", "**/*.toml", "**/*.json", ".gitignore", ".gitattributes"]
+SPDX-FileCopyrightText = "Quaternion Media"
+SPDX-License-Identifier = "Apache-2.0"
+
+# License files themselves
+[[annotations]]
+path = ["LICENSE", "LICENSES/**"]
+SPDX-License-Identifier = "Apache-2.0"
+
+# ADR and governance documents
+[[annotations]]
+path = ["adr/**", "records/**", "registers/**"]
+SPDX-FileCopyrightText = "Quaternion Media"
+SPDX-License-Identifier = "Apache-2.0"
+
+# Helm charts (YAML, largely configuration)
+[[annotations]]
+path = ["charts/**"]
+SPDX-FileCopyrightText = "Quaternion Media"
+SPDX-License-Identifier = "Apache-2.0"
+
+# Infrastructure and provisioning
+[[annotations]]
+path = ["tofu/**", "tower/**"]
+SPDX-FileCopyrightText = "Quaternion Media"
+SPDX-License-Identifier = "Apache-2.0"
+
+# Exclude directories and files that shouldn't be annotated
+[[annotations]]
+path = [".git/**", ".github/**", "governance/qm/**", "node_modules/**", ".venv/**", "__pycache__/**"]
+SPDX-License-Identifier = "Apache-2.0"
+skip = true

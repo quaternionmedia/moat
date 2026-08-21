@@ -1,0 +1,39 @@
+name: one-pr-check
+# Enforce one-PR-per-contributor governance rule
+# Only one open PR per GitHub user at a time (async-contract discipline)
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check one PR per contributor
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const author = context.payload.pull_request.user.login;
+            const openPRs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              creator: author
+            });
+
+            // Filter out the current PR
+            const otherPRs = openPRs.data.filter(pr => pr.number !== context.issue.number);
+            
+            if (otherPRs.length > 0) {
+              const prLinks = otherPRs.map(pr => `#${pr.number}`).join(', ');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `⚠️ Governance rule violation: You already have open PR(s): ${prLinks}\n\nThe async-contract rule allows one open PR per contributor. Please close or merge the other PR(s) before proceeding with this one.`
+              });
+              core.setFailed(`One PR per contributor rule violated. Open PRs: ${prLinks}`);
+            } else {
+              console.log(`✓ Contributor has no other open PRs (one-PR rule satisfied)`);
+            }
