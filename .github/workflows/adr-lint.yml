@@ -1,0 +1,39 @@
+name: adr-lint
+# Validate ADR (Architecture Decision Record) formatting and structure
+# Runs on every PR to adr/
+
+on:
+  pull_request:
+    paths:
+      - "adr/**"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install adr-lint
+        run: |
+          pip install pyyaml
+
+      - name: Lint ADRs
+        run: |
+          python governance/qm/ci/adr-lint.py adr/
+
+      - name: Comment on PR if issues
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "❌ ADR linting failed. Check the workflow output above."
+            })

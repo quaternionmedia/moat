@@ -1,0 +1,46 @@
+name: submodule-check
+# Validate governance submodule is correctly pinned
+# Project-only workflow: verifies governance/qm branch is project/moat
+
+on:
+  pull_request:
+    paths:
+      - ".gitmodules"
+      - "governance/qm"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Check submodule branch
+        run: |
+          BRANCH=$(git config -f .gitmodules --get submodule.governance/qm.branch)
+          if [ "$BRANCH" != "project/moat" ]; then
+            echo "❌ governance/qm submodule must be pinned to 'project/moat' branch"
+            echo "Current: $BRANCH"
+            exit 1
+          fi
+          echo "✓ Submodule correctly pinned to project/moat"
+
+      - name: Check submodule is reachable
+        run: |
+          cd governance/qm
+          git log -1 --oneline
+          cd ..
+          echo "✓ Submodule is accessible"
+
+      - name: Comment on PR if issues
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "❌ Submodule check failed. governance/qm must be pinned to project/moat branch. See workflow output."
+            })
