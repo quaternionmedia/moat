@@ -1,0 +1,28 @@
+VLAN,Name, Description     ,,IPv4,Netmask,Notes
+0,priority,CoS priority,,,,Reserved
+1,config,Device configuration,,192.168.1.0,255.255.255.0,Used for configurations only
+2,vWAN,Virtual WAN,,192.168.2.0,255.255.255.0,External network traffic
+3,lan,Primary network,,192.168.3.0,255.255.255.0,Trusted WiFi
+4,home,Home Assistant,,192.168.4.0,255.255.255.0,Home Assistant and trusted IoT
+5,work,Work network,,192.168.5.0,255.255.255.0,Work devices
+6,guest,Guest network   ,,192.168.6.0,255.255.255.0,Guest WiFi
+7,lab,Lab network,,192.168.7.0,255.255.255.0,Laboratory network
+8,k8s,Kubernetes,,192.168.8.0,255.255.255.0,Public Kubernetes access
+9,qm,Quaternion Net,,192.168.9.0,255.255.255.0,QM network
+10,lights,Lighting primary,,10.10.0.0,255.255.0.0,Unrestricted lighting
+11,lights_moat,Security lighting,,10.11.0.0,255.255.0.0,Perimeter lighting
+12,lights_studio,Studio lighting,,10.12.0.0,255.255.0.0,Studio DMX and lighting
+13,lights_halloween,Halloween lighting,,10.13.0.0,255.255.0.0,"Exterior theatrical lighting (WLED, xLights)"
+14,lights_home,Home Lighting,,10.14.0.0,255.255.0.0,Interior home lighting
+20,audio,Primary audio,,10.20.0.0,255.255.0.0,Unrestricted audio
+21,audio_moat,Security audio,,10.21.0.0,255.255.0.0,Perimeter audio
+22,audio_studio,Studio audio,,10.22.0.0,255.255.0.0,"Studio audio (Dante, AES67)"
+23,audio_halloween,Halloween audio,,10.23.0.0,255.255.0.0,Audio for xLights
+24,audio_home,Home audio,,10.24.0.0,255.255.0.0,Audio for home music
+30,video,Primary video,,10.30.0.0,255.255.0.0,Unrestricted video
+31,video_moat,Security video,,10.31.0.0,255.255.0.0,Perimeter cameras (Frigate)
+32,video_studio,Studio video,,10.32.0.0,255.255.0.0,Broadcast video
+33,video_halloween,Halloween video,,10.33.0.0,255.255.0.0,Theatrical video
+34,video_home,Home video,,10.34.0.0,255.255.0.0,Home video
+80,kubernetes,Kubernetes (private),,10.80.0.0,255.255.0.0,Private Kubernetes access
+86,IoT,Internet of Things,,10.86.0.0,255.255.0.0,Untrusted IoT devices
