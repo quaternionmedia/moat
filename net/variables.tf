@@ -24,39 +24,162 @@ variable "drawbridge_token" {
   description = "Drawbridge uapi token"
 }
 
-# Hardware configuration - MoatNet (primary router)
+# ── Hardware - MoatNet (primary router) ───────────────────────────────────────
+#
+# eth0 = WAN uplink (standalone, not a bridge member — see interfaces.tf)
+# eth1 = Drawbridge trunk   eth2 = Keep trunk   eth3 = Bailey trunk
+# eth4 = Config access port (untagged VLAN 1 only — the guaranteed way back in)
+
 variable "moatnet_bridge" {
   type        = string
   default     = "br-lan"
   description = "Bridge device name on MoatNet"
 }
 
-variable "moatnet_trunk_ports" {
-  type        = list(string)
-  default     = ["eth0:t", "eth1:t"]
-  description = "Trunk ports on MoatNet bridge (tagged)"
+variable "moatnet_wan_port" {
+  type        = string
+  default     = "eth0"
+  description = "MoatNet WAN uplink port (standalone, not bridged)"
 }
 
-# Hardware configuration - Drawbridge (primary AP)
+# Per-VLAN port membership on the MoatNet bridge. "u*" = untagged + native
+# (PVID), "t" = tagged. A VLAN absent from this map gets no bridge-vlan
+# section at all (vwan: it isn't a bridge member, it lives on eth0).
+variable "moatnet_vlan_ports" {
+  type        = map(list(string))
+  description = "uci bridge-vlan ports per VLAN name on MoatNet"
+  default = {
+    config = ["eth1:u*", "eth2:t", "eth3:t", "eth4:u*"]
+    lan    = ["eth1:t", "eth2:u*"]
+    home   = ["eth1:t", "eth2:t"]
+    work   = ["eth1:t", "eth2:t"]
+    guest  = ["eth1:t"]
+    lab    = ["eth3:u*"]
+    k8s    = ["eth3:t"]
+    qm     = ["eth2:t"]
+
+    lights           = ["eth3:t"]
+    lights_moat      = ["eth3:t"]
+    lights_studio    = ["eth3:t"]
+    lights_halloween = ["eth3:t"]
+    lights_home      = ["eth3:t"]
+
+    audio           = ["eth3:t"]
+    audio_moat      = ["eth3:t"]
+    audio_studio    = ["eth3:t"]
+    audio_halloween = ["eth3:t"]
+    audio_home      = ["eth3:t"]
+
+    video           = ["eth3:t"]
+    video_moat      = ["eth3:t"]
+    video_studio    = ["eth3:t"]
+    video_halloween = ["eth3:t"]
+    video_home      = ["eth3:t"]
+
+    kubernetes = ["eth3:t"]
+    iot        = ["eth1:t", "eth3:t"]
+  }
+}
+
+# ── Hardware - Drawbridge (primary AP, single uplink port) ───────────────────
+
 variable "drawbridge_bridge" {
   type        = string
   default     = "br-lan"
   description = "Bridge device name on Drawbridge"
 }
 
-variable "drawbridge_trunk_ports" {
-  type        = list(string)
-  default     = ["eth0:t"]
-  description = "Trunk ports on Drawbridge bridge (tagged)"
+variable "drawbridge_uplink_port" {
+  type        = string
+  default     = "eth0"
+  description = "Drawbridge's sole physical port, trunked to MoatNet eth1"
 }
 
-variable "drawbridge_vlans" {
+# config (VLAN 1) is untagged/native — the only IP Drawbridge holds.
+# Everything else is tagged and carried to WiFi with no IP of its own.
+variable "drawbridge_vlan_ports" {
+  type        = map(list(string))
+  description = "uci bridge-vlan ports per VLAN name on Drawbridge"
+  default = {
+    config = ["eth0:u*"]
+    lan    = ["eth0:t"]
+    home   = ["eth0:t"]
+    work   = ["eth0:t"]
+    guest  = ["eth0:t"]
+    iot    = ["eth0:t"]
+  }
+}
+
+# Client VLANs bridged to WiFi on Drawbridge (excludes "config", which is the
+# management interface, not a wireless network).
+variable "drawbridge_client_vlans" {
   type        = list(string)
-  description = "VLAN names to provision on the Drawbridge AP"
+  description = "VLANs bridged onto Drawbridge WiFi (no IP of their own)"
   default     = ["lan", "home", "work", "guest", "iot"]
 }
 
-# VLAN definitions from MoatNet.csv
+# ── Wireless SSIDs on Drawbridge ───────────────────────────────────────────────
+#
+# "Lab" -> the `lan` VLAN (3), the trusted primary. Not to be confused with
+# the separate `lab` VLAN (7), which is a wired-only network on Bailey.
+
+variable "wireless_ssids" {
+  type = map(object({
+    vlan       = string
+    encryption = string
+    hidden     = bool
+    isolate    = bool
+    bands      = list(string) # subset of ["2g", "5g"]
+  }))
+  description = "SSID definitions: name => settings"
+  default = {
+    "Lab" = {
+      vlan       = "lan"
+      encryption = "sae-mixed"
+      hidden     = false
+      isolate    = false
+      bands      = ["2g", "5g"]
+    }
+    "Lab-home" = {
+      vlan       = "home"
+      encryption = "sae-mixed"
+      hidden     = false
+      isolate    = false
+      bands      = ["2g", "5g"]
+    }
+    "Lab-work" = {
+      vlan       = "work"
+      encryption = "sae-mixed"
+      hidden     = false
+      isolate    = false
+      bands      = ["2g", "5g"]
+    }
+    "Lab-guest" = {
+      vlan       = "guest"
+      encryption = "sae-mixed"
+      hidden     = false
+      isolate    = true
+      bands      = ["2g", "5g"]
+    }
+    "Lab-iot" = {
+      # WPA2-only + hidden: WPA3/mixed mode breaks a lot of cheap IoT gear.
+      vlan       = "iot"
+      encryption = "psk2"
+      hidden     = true
+      isolate    = true
+      bands      = ["2g"]
+    }
+  }
+}
+
+variable "wireless_keys" {
+  type        = map(string)
+  sensitive   = true
+  description = "WiFi passphrase per SSID name (set via TF_VAR_wireless_keys)"
+}
+
+# ── VLAN definitions from MoatNet.csv ──────────────────────────────────────────
+
 locals {
   vlans = {
     # Management & core (192.168.x.0/24)
@@ -96,13 +219,14 @@ locals {
     iot        = { id = 86, cidr = "10.86.0.0/16", desc = "Untrusted IoT" }
   }
 
-  # Helper: extract network and prefix from CIDR
+  # Derived per-VLAN network facts. vwan is excluded — it's a DHCP client on
+  # eth0, not a bridge-member interface with a static gateway.
   vlan_networks = { for k, v in local.vlans : k => {
     id      = v.id
-    network = cidrhost(v.cidr, 0)
     netmask = cidrnetmask(v.cidr)
     gateway = cidrhost(v.cidr, 1)
+    prefix  = tonumber(split("/", v.cidr)[1])
     cidr    = v.cidr
     desc    = v.desc
-  } }
+  } if k != "vwan" }
 }
