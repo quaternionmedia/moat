@@ -1,44 +1,48 @@
 # Adopts stock named sections in place instead of creating duplicates.
-# Per the provider's adoption guide: creating a section whose name already
-# exists on the box returns 422. Every one of these names ships on a stock
-# OpenWrt install, so each must be imported once before `tofu apply` can
-# succeed cleanly.
 #
-#   tofu plan     # after adding an import block, plan should show "no changes"
-#                 # (or an in-place update) for the adopted resource, never a
-#                 # destroy/create.
+# Import blocks are root-module only (OpenTofu rejects them inside a called
+# module), so adoption is assembled here from every device's `adopt` list in
+# inventory.tf and pointed at the resource instance the module created for
+# that same key.
+#
+#   tofu plan   # an adopted resource should show "no changes", never a
+#               # destroy/create, once its import block is in place.
 
-# MoatNet: stock `wan` interface -> our standalone eth0 WAN client
-import {
-  to = uapi_network_interface.wan
-  id = "wan"
+locals {
+  adopt_interfaces = merge([
+    for dk, d in var.devices : { for k in d.adopt.interfaces : "${dk}.${k}" => { device = dk, key = k } }
+  ]...)
+  adopt_firewall_zones = merge([
+    for dk, d in var.devices : { for k in d.adopt.firewall_zones : "${dk}.${k}" => { device = dk, key = k } }
+  ]...)
+  adopt_dhcp_servers = merge([
+    for dk, d in var.devices : { for k in d.adopt.dhcp_servers : "${dk}.${k}" => { device = dk, key = k } }
+  ]...)
+  adopt_wireless_radios = merge([
+    for dk, d in var.devices : { for k in d.adopt.wireless_radios : "${dk}.${k}" => { device = dk, key = k } }
+  ]...)
 }
 
-# MoatNet: stock `lan` interface -> our VLAN-3 lan interface
 import {
-  to = uapi_network_interface.moatnet["lan"]
-  id = "lan"
-}
-
-# MoatNet: stock `lan` / `wan` firewall zones
-import {
-  to = uapi_firewall_zone.trusted["lan"]
-  id = "lan"
+  for_each = local.adopt_interfaces
+  to       = module.openwrt[each.value.device].uapi_network_interface.this[each.value.key]
+  id       = each.value.key
 }
 
 import {
-  to = uapi_firewall_zone.wan
-  id = "wan"
+  for_each = local.adopt_firewall_zones
+  to       = module.openwrt[each.value.device].uapi_firewall_zone.this[each.value.key]
+  id       = each.value.key
 }
 
-# MoatNet: stock `lan` DHCP server
 import {
-  to = uapi_dhcp_server.moatnet["lan"]
-  id = "lan"
+  for_each = local.adopt_dhcp_servers
+  to       = module.openwrt[each.value.device].uapi_dhcp_server.this[each.value.key]
+  id       = each.value.key
 }
 
-# Drawbridge: stock `lan` interface -> our client-VLAN `lan` (proto=none)
 import {
-  to = uapi_network_interface.drawbridge_client["lan"]
-  id = "lan"
+  for_each = local.adopt_wireless_radios
+  to       = module.openwrt[each.value.device].uapi_wireless_device.this[each.value.key]
+  id       = each.value.key
 }

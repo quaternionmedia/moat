@@ -1,4 +1,5 @@
 terraform {
+  required_version = ">= 1.9" # provider for_each (F1) — OpenTofu-only, not in Terraform
   required_providers {
     uapi = {
       source  = "openwrt-iac/uapi"
@@ -7,18 +8,18 @@ terraform {
   }
 }
 
-# MoatNet - primary router (the castle gate)
+# One provider instance per OpenWrt device. Iterates the FULL inventory
+# (including disabled devices) — this must stay a superset of the module's
+# for_each in devices.tf, or removing a device deadlocks: OpenTofu needs the
+# provider instance alive to destroy the resources it's removing.
 provider "uapi" {
-  alias    = "moatnet"
-  endpoint = var.moatnet_endpoint
-  token    = var.moatnet_token
-  insecure = true # ponytail: self-signed cert ok for now, swap for acme when exposed
+  alias    = "device"
+  for_each = local.openwrt_devices
+
+  endpoint = each.value.endpoint
+  token    = var.device_tokens[each.key]
+  insecure = each.value.insecure
 }
 
-# Drawbridge - primary access point (the bridge to the keep)
-provider "uapi" {
-  alias    = "drawbridge"
-  endpoint = var.drawbridge_endpoint
-  token    = var.drawbridge_token
-  insecure = true
-}
+# A non-OpenWrt platform (see inventory.tf) gets its own filtered provider
+# block here, following the same pattern, when one is actually added.
