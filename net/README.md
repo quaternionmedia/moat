@@ -1,107 +1,191 @@
-# MoatNet — OpenWrt fleet, as OpenTofu
+# MoatNet — Pulumi TypeScript
 
-## Layout
+Production-grade OpenWrt fleet management (MoatNet router + Drawbridge AP) via Pulumi and the bridged `openwrt-iac/uapi` provider.
+
+## Architecture
 
 ```
-vlans.tf       VLAN catalog (from MoatNet.csv) — vendor-neutral
-policy.tf      Firewall trust tiers + forwardings — vendor-neutral, keyed by device NAME
-inventory.tf   THE device list — hardware facts (ports, VLANs, wireless, adoption)
-devices.tf     Composes inventory + policy into module inputs; the module block itself
-providers.tf   One uapi provider instance per OpenWrt device
-imports.tf     Adopts stock lan/wan/radio sections instead of colliding with them
-variables.tf   Secrets only (device_tokens, wireless_keys)
-outputs.tf
-modules/openwrt-device/   Generic factory: creates whatever its input maps describe
+src/
+├── vlans.ts         # VLAN catalog (MoatNet.csv as types) — vendor-neutral
+├── policy.ts        # Firewall intent (zones/forwardings/rules) — vendor-neutral
+├── inventory.ts     # Device list (endpoints, roles, port topology)
+├── device.ts        # OpenwrtDevice ComponentResource factory
+└── index.ts         # Per-device provider + device instantiation
+```
+
+**Why Pulumi?** The flat HCL approach had tight coupling between generic data and resource shapes. Pulumi's ComponentResource breaks this tie: `device.ts` computes the actual resource config from generic device + policy inputs, catching topology mismatches at compile time (typed `vlan_ports` and `ip_vlans`) rather than at apply.
+
+**Vendor-neutral tiers:** Policy is pure data (firewall zones keyed by VLAN name, forwardings by source/dest pair names). A future Mikrotik or Vyatta module could consume `policy.ts` unchanged.
+
+**Per-device providers, no for_each trap:** Each device gets a real `uapi.Provider` instance in a plain `for` loop (see `index.ts`). The OpenTofu `for_each` limitation that forced a two-step retirement dance (step F3 in the old refactor plan) simply doesn't exist in Pulumi.
+
+## Setup
+
+### Prerequisites
+
+- Pulumi CLI 3.147+
+- Node 18+ (npm 9+)
+- Real endpoint URLs and API tokens for moatnet and drawbridge
+
+### First-time setup
+
+```bash
+# Set up local state backend
+pulumi login --local
+export PULUMI_CONFIG_PASSPHRASE="<passphrase>"
+
+# Create stack
+pulumi stack init bench
+
+# Set device endpoints + tokens (secrets encrypted with PULUMI_CONFIG_PASSPHRASE)
+pulumi config set --path 'tokens:moatnet'    "$(uapi-token get moatnet)"
+pulumi config set --path 'tokens:drawbridge' "$(uapi-token get drawbridge)"
+
+# Install dependencies
+npm install
+```
+
+### Building and previewing
+
+```bash
+# Compile TypeScript (required before preview/up)
+npm run build
+
+# Dry-run: shows what will be created/updated/deleted
+export PULUMI_CONFIG_PASSPHRASE="<passphrase>"
+npm run preview
+
+# Apply
+npm run up
 ```
 
 ## Adding a device
 
-Add an entry to `devices` in `inventory.tf`. No new resource blocks, no new
-provider block, no new module block.
+Three edits, all in `src/inventory.ts`:
 
-```hcl
-"gatehouse" = {
-  endpoint   = "https://192.168.1.3/api/v3"
-  role       = "ap"                                    # advisory only
-  vlan_ports = { config = ["eth0:u*"], lan = ["eth0:t"] }
-  ip_vlans   = { config = { ipaddrs = ["192.168.1.3"], gateway = "192.168.1.1" } }
-  dhcp_vlans = []
-}
+```typescript
+export const INVENTORY: Record<string, Device> = {
+  moatnet: { ... },
+  drawbridge: { ... },
+  my_new_device: {          // ← Add device name
+    endpoint: "https://192.168.x.y/api/v3",  // ← Endpoint
+    role: "router",         // ← "router" or "ap"
+    vlan_ports: {           // ← Which VLANs on which ports (from VLAN_NETWORKS keys)
+      config: ["eth0:u*"],  //   "u*" = untagged, "t" = tagged
+      lan: ["eth0:t"],
+      iot: ["eth1:t"],
+    },
+    // (no ip_vlans? defaults to every vlan_ports key getting .1 gateway)
+    // (no dhcp_vlans? defaults to all of ip_vlans)
+  }
+};
 ```
 
-Add its token to `TF_VAR_device_tokens`. That's the whole change.
+Then set its token:
 
-- Omit `ip_vlans` entirely and every `vlan_ports` key gets a real IP at the
-  VLAN's catalog gateway address — the mechanical default for a router.
-- Give `ip_vlans` explicit keys (like above) and only those VLANs get an IP;
-  everything else in `vlan_ports` still gets a bodiless `proto=none`
-  interface (needed for wireless/bridging to attach to), just no address.
-- Want this device to run firewall policy? Add a same-named key to
-  `local.policy` in `policy.tf`. Nothing keys off `role` — an entry simply
-  existing (or not) in `policy` is what turns firewall resources on.
-- `platform` defaults to `"openwrt"` and is the seam for a future non-OpenWrt
-  device — see *Adding a non-OpenWrt device* below. Leave it alone for now.
-
-## Targeting one device
-
-```sh
-tofu plan  -target='module.openwrt["moatnet"]'
-tofu apply -target='module.openwrt["moatnet"]'
+```bash
+pulumi config set --secret --path 'tokens:my_new_device' "$(uapi-token get my_new_device)"
 ```
 
-Ordering matters here regardless of targeting: Drawbridge's management IP
-lives on a VLAN MoatNet serves, so MoatNet must be applied first.
+That's it. No new provider block, no new module block, no new resource definitions. The ComponentResource expands the device config into the full resource tree.
 
-## Retiring a device
+### Retiring a device
 
-Two applies, not one — a provider instance can't be removed from config while
-resources still reference it, so the module and the provider can't drop the
-same device in the same plan (see `plans/modular-refactor.md`, finding F3):
-
-```sh
-# 1. Set enabled = false on the device in inventory.tf, apply.
-#    Its module instance disappears; the provider instance survives.
-tofu apply
-# 2. Remove the device's entry from inventory.tf entirely.
-tofu apply
+```typescript
+// In src/inventory.ts:
+// my_device: { ... } ← just delete this entry
 ```
 
-## Adding a non-OpenWrt device (future)
+Preview will show all resources for that device marked for deletion. If you want a "graceful" retirement (keep the config but don't touch it), set `enabled: false` instead.
 
-Module `source` is resolved at `init` time and can't be an expression, so a
-second platform isn't a per-device switch inside `openwrt-device` — it's one
-more module block, filtered by `platform`, added beside it in `devices.tf`:
+## Firewall policy
 
-```hcl
-module "mikrotik" {
-  for_each = { for k, v in var.devices : k => v if v.platform == "mikrotik" && v.enabled }
-  source   = "./modules/mikrotik-device"
-  vlans    = local.vlans              # same catalog
-  firewall = try(local.policy[each.key], null) # same policy
-}
+`src/policy.ts` defines firewall intent as plain data:
+
+- **`TRUSTED_VLANS`**: config, lan, home, work, qm → input=ACCEPT, forward=ACCEPT
+- **`BAILEY_VLANS`**: k8s, kubernetes, lab → input=DROP, forward=DROP
+- **`ISOLATED_VLANS`**: guest, iot, lights*, audio*, video* → input=DROP, forward=DROP
+- **Forwardings**: "home→device VLANs" (HA control), "lan→video_moat", "lan/home→AV primaries", "trusted/bailey/isolated→wan"
+- **Rules**: ICMP from trusted, DHCP/DNS/NTP from everywhere, DROP for INPUT on isolated zones
+
+All keyed by **device name**, not role. Devices absent from `POLICY` (like Drawbridge) get zero firewall resources.
+
+## Critical OpenWrt facts (carried from the original refactor)
+
+**C1.** Stock `lan`/`wan` sections must be adopted or creates will 422. Use `adopt.interfaces` / `adopt.firewall_zones` / `adopt.dhcp_servers`.
+
+**C2.** MoatNet's eth4 must stay untagged VLAN 1 (`eth4:u*`), or the box locks itself out.
+
+**C4.** Every INPUT-only zone (bailey + isolated) needs DNS/NTP accepts, or clients get a lease they can't resolve.
+
+**H1.** A `match = { srcZone: "x" }` rule without `destZone` lands in INPUT chain, not FORWARD. Don't rely on implicit FORWARD placement.
+
+**Drawbridge:** Single eth0 port must carry untagged VLAN 1 (management), or the AP self-locks. All client VLANs are tagged. Client VLANs have no IP (only DHCP clients do), so they attach straight to WiFi SSIDs via `proto=none` passthrough interfaces.
+
+## Secrets
+
+Tokens are stored in Pulumi config (encrypted by `PULUMI_CONFIG_PASSPHRASE`):
+
+```bash
+pulumi config set --secret --path 'tokens:moatnet' "..."
+pulumi config get --secret tokens:moatnet        # retrieve (requires passphrase)
+pulumi config ls --all                            # list all (masked if secret)
 ```
 
-Nothing above this line changes. This only stays true as long as `vlans.tf`
-and `policy.tf` keep expressing VLANs and firewall intent as plain data
-(VLAN names, zone names) rather than uapi resource shapes — that discipline,
-not a plugin system, is what makes a second vendor additive instead of a
-rewrite.
+The stack YAML file (`~/.pulumi/stacks/moatnet/bench.json` for local backend) is encrypted at rest and never decrypted to disk when `--secret` is used.
 
-## Bootstrap (one-time, per physical device)
+## Per-device targeting
 
-```sh
-ssh root@<device-ip>
-opkg update && opkg install uapi
-uapi-token create --name tofu
+```bash
+# Create/update only drawbridge's resources
+npm run build
+export PULUMI_CONFIG_PASSPHRASE="..."
+pulumi up --target 'urn:pulumi:bench::moatnet::moat:device:OpenwrtDevice::drawbridge'
+
+# Or a specific resource within a device
+pulumi up --target 'urn:pulumi:bench::moatnet::moat:device:OpenwrtDevice::drawbridge::uapi:index:NetworkInterface::lan'
 ```
 
-Note the token and endpoint; add them to `TF_VAR_device_tokens` /
-`inventory.tf`. uapi ships a self-signed cert (`insecure = true` handles that
-for now — install a real one via `luci-app-acme` before this leaves the
-bench).
+## Testing role validation
 
-## Design history
+Role validation is advisory (never affects behavior). To test it:
 
-Full rationale, verified OpenTofu constraints (provider `for_each`, `import`
-being root-only, etc.), and the original firewall/topology review live in
-`plans/`.
+```bash
+npx ts-node src/roles.test.ts
+```
+
+## Monitoring and debugging
+
+```bash
+# Full resource list + types
+pulumi stack --show-all
+
+# Export resource state as JSON
+pulumi export > stack-export.json
+
+# Destroy everything
+pulumi destroy
+
+# Destroy only one device
+pulumi destroy --target 'urn:pulumi:bench::moatnet::moat:device:OpenwrtDevice::drawbridge'
+```
+
+## Future: non-OpenWrt platforms
+
+To add a Mikrotik or Vyatta device module:
+
+1. Create `src/device-mikrotik.ts` with a `MikrotikDevice` ComponentResource
+2. Add a new provider alias in `index.ts` (e.g., `providers: { mikrotik: mkt_provider }`)
+3. Add device entries to `INVENTORY` with `platform: "mikrotik"`
+4. Consume the same `policy.ts` (zones/forwardings/rules are vendor-neutral)
+
+No changes to `vlans.ts` or `policy.ts` needed — they're the stable interface.
+
+## References
+
+- [openwrt-iac/uapi provider](https://github.com/openwrt-iac/terraform-provider-uapi)
+- [Pulumi TypeScript SDK](https://www.pulumi.com/docs/reference/pkg/nodejs/pulumi/pulumi/)
+- [Pulumi ComponentResource](https://www.pulumi.com/docs/concepts/resources/#autonaming)
+- `MoatNet.csv` — source of VLAN definitions (now typed in `src/vlans.ts`)
+- `plans/net-review.md` — original defect findings (all carry forward to Pulumi)
+- `plans/pulumi-migration.md` — full migration plan + decision history

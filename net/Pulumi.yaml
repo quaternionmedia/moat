@@ -1,0 +1,13 @@
+name: moatnet
+runtime:
+  name: nodejs
+  options:
+    typescript: true
+    packagemanager: npm
+description: OpenWrt fleet (MoatNet router + Drawbridge AP) managed via the bridged openwrt-iac/uapi provider
+packages:
+  uapi:
+    source: terraform-provider
+    version: 1.3.0
+    parameters:
+      - openwrt-iac/uapi

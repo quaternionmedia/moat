@@ -1,4 +1,11 @@
-# OpenTofu
+# Pulumi
+node_modules/
+bin/
+sdks/
+dist/
+.pulumi/
+
+# OpenTofu (legacy, kept in git history)
 .terraform/
 *.tfstate
 *.tfstate.*
