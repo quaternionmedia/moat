@@ -11,6 +11,8 @@ import { POLICY } from "./policy";
 import { VLAN_NETWORKS } from "./vlans";
 
 const cfg = new pulumi.Config();
+const tokensObj = cfg.getObject<Record<string, string>>("tokens") || {};
+const wifiPasswords = cfg.getObject<Record<string, Record<string, string>>>("wifiPasswords") || {};
 
 // Filter to OpenWrt devices only and enabled only
 const openwrtDevices = filterEnabled(filterByPlatform(INVENTORY, "openwrt"));
@@ -19,8 +21,11 @@ const openwrtDevices = filterEnabled(filterByPlatform(INVENTORY, "openwrt"));
 const devices: Record<string, OpenwrtDevice> = {};
 
 for (const [deviceName, device] of Object.entries(openwrtDevices)) {
-  // Get the API token from Pulumi config (secret)
-  const token = cfg.requireSecret(`tokens:${deviceName}`);
+  // Get the API token from Pulumi config
+  if (!tokensObj[deviceName]) {
+    throw new Error(`Missing tokens.${deviceName} in configuration`);
+  }
+  const token = tokensObj[deviceName];
 
   // Create a provider for this device
   const provider = new uapi.Provider(`uapi-${deviceName}`, {
@@ -32,11 +37,28 @@ for (const [deviceName, device] of Object.entries(openwrtDevices)) {
   // Get the policy for this device (defaults to empty if absent)
   const devicePolicy = POLICY[deviceName];
 
+  // Inject WiFi passwords into device config
+  const deviceWithPasswords = { ...device };
+  if (deviceWithPasswords.wireless?.ssids && wifiPasswords[deviceName]) {
+    deviceWithPasswords.wireless = {
+      ...deviceWithPasswords.wireless,
+      ssids: Object.fromEntries(
+        Object.entries(deviceWithPasswords.wireless.ssids).map(([ssidName, ssidConfig]) => [
+          ssidName,
+          {
+            ...ssidConfig,
+            key: wifiPasswords[deviceName][ssidName] || ssidConfig.key,
+          },
+        ])
+      ),
+    };
+  }
+
   // Instantiate the device resource
   devices[deviceName] = new OpenwrtDevice(
     deviceName,
     {
-      device,
+      device: deviceWithPasswords,
       vlans: VLAN_NETWORKS,
       policy: devicePolicy,
     },

@@ -8,6 +8,6 @@ description: OpenWrt fleet (MoatNet router + Drawbridge AP) managed via the brid
 packages:
   uapi:
     source: terraform-provider
-    version: 1.3.0
+    version: 1.4.0
     parameters:
       - openwrt-iac/uapi

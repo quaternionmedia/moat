@@ -129,7 +129,9 @@ Tokens are stored in Pulumi config (encrypted by `PULUMI_CONFIG_PASSPHRASE`):
 ```bash
 pulumi config set --secret --path 'tokens:moatnet' "..."
 pulumi config get --secret tokens:moatnet        # retrieve (requires passphrase)
-pulumi config ls --all                            # list all (masked if secret)
+pulumi config set --secret --path moatnet:wifiPasswords.drawbridge.Lab "<Wifi Password>"
+# list all (masked if secret)
+pulumi config
 ```
 
 The stack YAML file (`~/.pulumi/stacks/moatnet/bench.json` for local backend) is encrypted at rest and never decrypted to disk when `--secret` is used.

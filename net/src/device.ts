@@ -209,7 +209,7 @@ function computeWirelessInterfaces(
         mode: "ap",
         ssid: ssidName,
         encryption: ssidConfig.encryption ?? "sae-mixed",
-        key: undefined, // ponytail: keys would come from Pulumi secrets
+        key: ssidConfig.key,
         hidden: ssidConfig.hidden ?? false,
         isolate: ssidConfig.isolate ?? false,
       };

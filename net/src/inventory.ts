@@ -27,6 +27,7 @@ export interface SSIDConfig {
   vlan: VlanName;
   radios: string[]; // keys into wireless.radios
   encryption?: string; // default: "sae-mixed"
+  key?: string; // WiFi password
   hidden?: boolean; // default: false
   isolate?: boolean; // default: false
 }
@@ -121,9 +122,9 @@ export const INVENTORY: Record<string, Device> = {
     // server for every VLAN it bridges — the mechanical default.
 
     adopt: {
-      interfaces: ["lan", "wan"],
-      firewall_zones: ["lan", "wan"],
-      dhcp_servers: ["lan"],
+      interfaces: [],
+      firewall_zones: [],
+      dhcp_servers: [],
     },
   },
 
@@ -131,6 +132,7 @@ export const INVENTORY: Record<string, Device> = {
     endpoint: "https://192.168.1.2/api/v3",
     role: "ap",
     bridge: "br-lan",
+    enabled: false,
     // No wan_port — Drawbridge's only port is the uplink to MoatNet eth1.
 
     vlan_ports: {

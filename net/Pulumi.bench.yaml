@@ -1,6 +1,5 @@
-encryptionsalt: v1:YEc0bQ17J7U=:v1:GqsXF1y11gYLhmmq:y4IH15zQUYioKKdwuao291INfeQ+yQ==
+encryptionsalt: v1:JNv9kNvQRHE=:v1:c50C8buVBp+epsaR:Om1OLhx3omGN68c8+Kz8tvR5OXZoJA==
 config:
-  tokens:moatnet:
-    secure: v1:0znaLBzO4l+vzbJM:EIGzj6vSAorxFP4B/PSy0f7ICvu5C5kpYqpPkrIDTp5UXkMSKbTg
-  tokens:drawbridge:
-    secure: v1:yKqyU4JTtb6rTTkj:sDSOfoCnFVdg0RbT6EqW4bH/M661E3xftO2lR4eoGh/53/RBbC450Scn
+  moatnet:tokens:
+    moatnet:
+      secure: v1:X6+z8NvnPzsDm+BE:tW7ncj/2Q7pNaB3w8bbMTZz5aLH8yTAvODUX8+5QDwanu++mzdaBzGWJzdNCVk28

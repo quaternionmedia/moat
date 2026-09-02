@@ -1,0 +1,13 @@
+#!/bin/bash
+
+HOST=192.168.1.1
+
+exec curl http://$HOST/cgi-bin/luci/rpc/auth --data '
+{
+  "id": 1,
+  "method": "login",
+  "params": [
+    "root",
+    "'"$OPENWRT_PASSWORD"'"
+  ]
+}' | jq -r .result > .token
