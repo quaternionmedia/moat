@@ -37,6 +37,30 @@ export interface UciAuth {
 }
 
 /**
+ * Build auth from the environment.
+ *
+ * `UCI_SESSION` alone is fine for read-only use, but it cannot be renewed —
+ * supply `UCI_USERNAME`/`UCI_PASSWORD` for anything long-running, since rpcd
+ * sessions expire (default 300s) and a large apply outlives them.
+ */
+export function authFromEnv(env: NodeJS.ProcessEnv = process.env): UciAuth {
+  const auth: UciAuth = {};
+  if (env.UCI_SESSION) auth.session = env.UCI_SESSION;
+  if (env.UCI_USERNAME) auth.username = env.UCI_USERNAME;
+  if (env.UCI_PASSWORD) auth.password = env.UCI_PASSWORD;
+  if (env.UCI_TIMEOUT) {
+    const t = Number(env.UCI_TIMEOUT);
+    if (Number.isFinite(t)) auth.timeout = t;
+  }
+  return auth;
+}
+
+/** True if this auth can be used at all (either a session or credentials). */
+export function hasUsableAuth(auth: UciAuth): boolean {
+  return Boolean(auth.session || (auth.username && auth.password));
+}
+
+/**
  * Holds the current session and knows how to obtain a new one.
  *
  * Transports call `get()` before a request and `invalidate()` when the device

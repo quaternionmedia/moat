@@ -20,7 +20,8 @@ import { UciTransport } from "./types";
 
 export * from "./types";
 export * from "./apply";
-export { SessionManager, UciAuth } from "./session";
+export * from "./reconcile";
+export { SessionManager, UciAuth, authFromEnv, hasUsableAuth } from "./session";
 export { UbusTransport } from "./ubus";
 export { LuciRpcTransport } from "./luci-rpc";
 

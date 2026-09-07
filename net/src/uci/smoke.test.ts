@@ -16,12 +16,14 @@ import {
   UbusTransport,
   UciAuthError,
   UciError,
+  authFromEnv,
   connect,
+  hasUsableAuth,
   supportsRollback,
 } from "./index";
 
 const host = process.env.UCI_HOST ?? "http://192.168.1.1";
-const session = process.env.UCI_SESSION;
+const auth = authFromEnv();
 
 let failures = 0;
 
@@ -31,8 +33,12 @@ function check(label: string, ok: boolean, detail?: string) {
 }
 
 async function main(): Promise<void> {
-  if (!session) {
-    console.error("UCI_SESSION is required (a LuCI/ubus session id, e.g. from .token)");
+  if (!hasUsableAuth(auth)) {
+    console.error(
+      "Set UCI_SESSION (a LuCI/ubus session id, e.g. from .token) or\n" +
+        "UCI_USERNAME + UCI_PASSWORD. Credentials are preferred: sessions\n" +
+        "expire and cannot be renewed from a bare token."
+    );
     process.exit(2);
   }
 
@@ -41,7 +47,7 @@ async function main(): Promise<void> {
   // --- auto-detection ---
   const auto = await connect({
     baseUrl: host,
-    auth: { session },
+    auth,
     onEvent: (m) => console.log(`  [detect] ${m}`),
   });
   check("auto-detect picked a transport", Boolean(auto.name), auto.name);
@@ -56,7 +62,7 @@ async function main(): Promise<void> {
   );
 
   // --- both backends directly, sharing one session ---
-  const shared = new SessionManager(host, { session });
+  const shared = new SessionManager(host, auth);
   const ubus = new UbusTransport(host, shared);
   const luci = new LuciRpcTransport(host, shared);
 

@@ -94,9 +94,20 @@ export class LuciRpcTransport implements UciTransport {
     try {
       return await this.callOnce(method, params, opts);
     } catch (err) {
-      if (err instanceof UciAuthError && this.session.canRenew) {
-        this.session.invalidate();
-        return await this.callOnce(method, params, opts);
+      if (err instanceof UciAuthError) {
+        if (this.session.canRenew) {
+          this.session.invalidate();
+          return await this.callOnce(method, params, opts);
+        }
+        throw new UciAuthError(
+          `${err.message} — and no username/password is configured to obtain a new ` +
+            `session. rpcd sessions expire (default 300s), so a static token cannot ` +
+            `cover a multi-minute apply. Set auth.username/auth.password so the ` +
+            `transport can re-login on expiry.`,
+          this.name,
+          method,
+          err.detail
+        );
       }
       throw err;
     }

@@ -158,9 +158,23 @@ export class UbusTransport implements UciTransport, RollbackCapable {
     try {
       return await this.callOnce<T>(method, args, opts);
     } catch (err) {
-      if (err instanceof UciAuthError && this.session.canRenew) {
-        this.session.invalidate();
-        return await this.callOnce<T>(method, args, opts);
+      if (err instanceof UciAuthError) {
+        if (this.session.canRenew) {
+          this.session.invalidate();
+          return await this.callOnce<T>(method, args, opts);
+        }
+        // Without credentials there is nothing to retry with, and a bare
+        // "Access denied" hides why. rpcd sessions are short-lived (300s by
+        // default), so a static token cannot span a large apply.
+        throw new UciAuthError(
+          `${err.message} — and no username/password is configured to obtain a new ` +
+            `session. rpcd sessions expire (default 300s), so a static token cannot ` +
+            `cover a multi-minute apply. Set auth.username/auth.password so the ` +
+            `transport can re-login on expiry.`,
+          this.name,
+          method,
+          err.detail
+        );
       }
       throw err;
     }
