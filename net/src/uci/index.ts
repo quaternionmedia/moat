@@ -35,6 +35,18 @@ export interface ConnectOptions {
   preference?: TransportPreference;
   fetchImpl?: typeof fetch;
   onEvent?: (message: string) => void;
+  /**
+   * Declare that rollback has been *measured* working on this device, e.g.
+   * after running `src/uci/write.test.ts` against it once.
+   *
+   * Kept explicit rather than probed because it cannot be inferred: the ACL
+   * permitting apply+confirm says nothing about whether rpcd arms a timer, and
+   * the only honest check is to apply a harmless change, decline to confirm,
+   * and watch the committed config revert — not something to do implicitly on
+   * a production gateway. Leaving it unset is safe: applies still work, they
+   * are just reported as unprotected.
+   */
+  rollbackVerified?: boolean;
 }
 
 /**
@@ -51,6 +63,11 @@ export async function connect(opts: ConnectOptions): Promise<UciTransport> {
 
   const ubus = new UbusTransport(baseUrl, session, fetchImpl);
   const luci = new LuciRpcTransport(baseUrl, session, fetchImpl);
+
+  if (opts.rollbackVerified) {
+    // Only meaningful for ubus; luci-rpc has no apply/confirm at all.
+    ubus.capabilities.rollbackVerified = true;
+  }
 
   if (preference === "ubus") return ubus;
   if (preference === "luci-rpc") {

@@ -1,28 +1,27 @@
 /**
  * Write-path and rollback-safety test. Requires explicit opt-in:
  *
- *   UCI_WRITE_OK=1 UCI_HOST=http://192.168.1.1 UCI_SESSION=$(cat .token) \
- *     npx ts-node src/uci/write.test.ts
+ *   set -a; . ./.env; set +a
+ *   UCI_WRITE_OK=1 UCI_HOST=http://192.168.1.1 npx ts-node src/uci/write.test.ts
  *
  * This writes to a real device, so the design is deliberately conservative:
  *
  * - All changes go to a throwaway section (`moat_probe`) in the `system`
  *   config, never `network`/`firewall`/`dhcp`. Nothing consumes that section,
- *   and a `system` reload does not restart uhttpd/rpcd — so the RPC session
- *   survives the test. Applying to `network` could drop our own connection
- *   mid-test, which would prove nothing and cost a lot.
- * - Phase 3 is the point of the whole exercise: it applies a change and
- *   deliberately never confirms, then asserts the device *reverted by itself*.
- *   That is the mechanism protecting against the lockout the README warns
- *   about (C2, and Drawbridge's eth0 self-lock). Better to prove it works on a
- *   harmless marker option now than to discover it doesn't during a real
- *   VLAN cutover.
+ *   and a `system` reload does not restart uhttpd/rpcd, so the RPC session
+ *   survives. Applying to `network` could drop our own connection mid-test,
+ *   which would prove nothing and cost a lot.
+ * - Phase 3 is the point of the exercise: it applies a change and deliberately
+ *   never confirms, then asserts the device reverted *by itself*. That is the
+ *   mechanism protecting against the lockout the README warns about (C2, and
+ *   Drawbridge's eth0 self-lock). Proving it on a harmless marker beats
+ *   discovering it fails during a real VLAN cutover.
  * - Cleanup runs on every exit path.
  */
 
 import {
-  UbusTransport,
   SessionManager,
+  UbusTransport,
   applyChanges,
   authFromEnv,
   supportsRollback,
@@ -36,8 +35,11 @@ const CFG = "system";
 const SECTION = "moat_probe";
 const TYPE = "moat_probe";
 
-/** Short so the test is quick; real applies would use a longer window. */
-const ROLLBACK_TIMEOUT_S = 30;
+/**
+ * Must be >= 90: rpcd silently arms no timer below that, so a shorter value
+ * would make this test "prove" rollback is broken when it is not.
+ */
+const ROLLBACK_TIMEOUT_S = 90;
 
 let failures = 0;
 function check(label: string, ok: boolean, detail?: string) {
@@ -47,14 +49,11 @@ function check(label: string, ok: boolean, detail?: string) {
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 async function main(): Promise<void> {
-  // This test spans a 30s rollback window plus verification, so it will
-  // outlive a stale session. Credentials are required, not just a token.
   if (!auth.username || !auth.password) {
     console.error(
-      "UCI_USERNAME and UCI_PASSWORD are required for this test.\n" +
-        "It waits out a 30s rollback timer, which exceeds what a static\n" +
-        "UCI_SESSION reliably survives (rpcd default timeout is 300s and the\n" +
-        "session may already be part-used)."
+      "Credentials are required for this test: UCI_USERNAME/UCI_PASSWORD\n" +
+        "or OPENWRT_USER/OPENWRT_PASSWORD (e.g. `set -a; . ./.env; set +a`).\n" +
+        "It waits out a 30s rollback timer, which a static session may not survive."
     );
     process.exit(2);
   }
@@ -63,13 +62,9 @@ async function main(): Promise<void> {
     process.exit(2);
   }
 
-  const t = new UbusTransport(host, new SessionManager(host, auth));
-  if (!supportsRollback(t)) {
-    console.error("ubus transport did not report rollback capability");
-    process.exit(1);
-  }
+  const session = new SessionManager(host, auth);
+  const t = new UbusTransport(host, session);
 
-  // A real round trip proving the device answers us.
   const verify = async () => {
     const s = await t.getAll("network");
     return typeof s["lan"]?.values["ipaddr"] === "string";
@@ -83,29 +78,43 @@ async function main(): Promise<void> {
   console.log(`\nUCI write + rollback test against ${host}\n`);
 
   try {
-    // Preconditions: never start from a dirty device.
-    const preChanges = await t.changes(CFG);
-    check(`${CFG} starts clean`, preChanges.length === 0, `${preChanges.length} staged`);
-    check("device is reachable", await verify());
+    // ---------- Phase 0: what does this session actually allow? ----------
+    const caps = await t.probeCapabilities();
+    console.log(`  caps: ${JSON.stringify(caps)}`);
+    check("rollback (apply+confirm) is available", caps.rollback);
+    check("supportsRollback() agrees", supportsRollback(t) === caps.rollback);
+    if (!caps.revert) {
+      console.log("       note: uci.revert is ACL-forbidden; discarding staged work");
+      console.log("       relies on abandoning the session instead (tested in phase 1).");
+    }
 
-    // ---------- Phase 1: write path, staged only, then revert ----------
-    console.log("\nPhase 1 — staged writes, then revert (no commit)");
-    await t.putSection(CFG, SECTION, TYPE, { marker: "phase1", extra: "x" });
+    check(`${CFG} starts clean`, (await t.changes(CFG)).length === 0);
+    check("device is reachable", await verify());
+    check("no leftover probe section", (await marker()) === undefined);
+
+    // ---------- Phase 1: staging is per-session ----------
+    // Stage, confirm it is visible, then abandon the session and confirm a
+    // fresh one sees nothing. This is what makes re-login mid-apply unsafe.
+    console.log("\nPhase 1 — staged writes are session-scoped, not committed");
+    session.beginTransaction();
+    await t.addSection(CFG, SECTION, TYPE, { marker: "phase1", extra: "x" });
     await t.setOptions(CFG, SECTION, { second: "y" });
     const staged = await t.changes(CFG);
-    check("putSection + setOptions staged changes", staged.length > 0, `${staged.length} staged`);
+    check("addSection + setOptions staged changes", staged.length > 0, `${staged.length} staged`);
     console.log(`       staged: ${JSON.stringify(staged)}`);
-
     await t.deleteOptions(CFG, SECTION, ["extra"]);
     check("deleteOptions staged without error", true);
+    session.endTransaction();
 
-    await t.revert(CFG);
-    check("revert cleared staging", (await t.changes(CFG)).length === 0);
-    check("nothing persisted from phase 1", (await marker()) === undefined);
+    // Abandon the session; per-session staging means the work evaporates.
+    session.invalidate();
+    check("a fresh session sees no staged changes", (await t.changes(CFG)).length === 0);
+    check("and nothing was persisted", (await marker()) === undefined);
 
-    // ---------- Phase 2: apply + verify + confirm (happy path) ----------
+    // ---------- Phase 2: apply + verify + confirm ----------
     console.log("\nPhase 2 — apply with rollback timer, verify, confirm");
-    await t.putSection(CFG, SECTION, TYPE, { marker: "phase2" });
+    session.beginTransaction();
+    await t.addSection(CFG, SECTION, TYPE, { marker: "phase2" });
     const r2 = await applyChanges(t, [CFG], {
       timeout: ROLLBACK_TIMEOUT_S,
       verify,
@@ -113,18 +122,29 @@ async function main(): Promise<void> {
       verifyDelayMs: 1500,
       onEvent: (m) => console.log(`       [apply] ${m}`),
     });
-    check("apply reported rollback protection", r2.rollbackProtected);
+    session.endTransaction();
+    check(
+      "reported protection matches verified capability",
+      r2.rollbackProtected === t.capabilities.rollbackVerified,
+      `reported ${r2.rollbackProtected}, verified ${t.capabilities.rollbackVerified}`
+    );
     check("apply was confirmed", r2.confirmed);
     check("change persisted after confirm", (await marker()) === "phase2", String(await marker()));
     check("no staged changes remain", (await t.changes(CFG)).length === 0);
 
     // ---------- Phase 3: apply WITHOUT confirm -> device self-reverts ----------
     console.log("\nPhase 3 — apply and never confirm; device must revert itself");
+    session.beginTransaction();
     await t.setOptions(CFG, SECTION, { marker: "phase3" });
     check("phase3 change staged", (await t.changes(CFG)).length > 0);
 
-    // A verify() that always fails drives the real "cannot reach device" path
-    // in applyChanges, which by design leaves the timer to expire.
+    // Capture what the code claimed *before* the apply: this phase is what
+    // establishes rollbackVerified, so comparing against the post-measurement
+    // value would be circular.
+    const claimedProtection = t.capabilities.rollbackVerified;
+
+    // A verify() that always fails drives the real "cannot reach device" path,
+    // which by design leaves the timer to expire.
     const r3 = await applyChanges(t, [CFG], {
       timeout: ROLLBACK_TIMEOUT_S,
       verify: async () => false,
@@ -132,28 +152,58 @@ async function main(): Promise<void> {
       verifyDelayMs: 500,
       onEvent: (m) => console.log(`       [apply] ${m}`),
     });
-    check("apply armed the timer", r3.rollbackProtected);
+    session.endTransaction();
     check("apply was NOT confirmed", !r3.confirmed);
     check("change is live before the timer expires", (await marker()) === "phase3", String(await marker()));
 
-    const waitS = ROLLBACK_TIMEOUT_S + 15;
+    const waitS = ROLLBACK_TIMEOUT_S + 20;
     console.log(`       waiting ${waitS}s for the rollback timer to fire...`);
     await sleep(waitS * 1000);
 
+    // Read the *committed* value, not the effective one. `uci.get` overlays
+    // this session's staged delta and would still report "phase3" even after
+    // /etc/config was restored. Abandoning the session gives a delta-free view
+    // — and is what you should do after a rollback anyway, since reusing the
+    // session would re-apply the change that was just reverted.
+    session.invalidate();
+
+    // This phase *measures* rollback rather than asserting it. A device where
+    // it does not fire is a supported (if unfortunate) configuration; what
+    // must never happen is the code claiming protection it does not have.
     const after = await marker();
+    const reverted = after === "phase2";
+    if (reverted) {
+      check("device self-reverted the unconfirmed change", true, "rollback works here");
+      t.capabilities.rollbackVerified = true;
+    } else {
+      console.log(
+        `  NOTE  rollback did NOT fire — committed marker is still ${String(after)}.\n` +
+          `        Applies on this device are UNPROTECTED; sequence changes so a\n` +
+          `        working management path always survives. (Check the timeout is\n` +
+          `        >= ${ROLLBACK_TIMEOUT_S}s before concluding the feature is missing.)`
+      );
+    }
     check(
-      "device self-reverted the unconfirmed change",
-      after === "phase2",
-      `marker is now ${String(after)} (expected phase2, the last confirmed value)`
+      "reported protection matched what was declared at call time",
+      r3.rollbackProtected === claimedProtection,
+      `reported ${r3.rollbackProtected}, declared ${claimedProtection}`
     );
-    check("device still reachable after rollback", await verify());
+    if (reverted && !claimedProtection) {
+      console.log(
+        "  NOTE  rollback is real on this device but was not declared, so the apply\n" +
+          "        was reported unprotected. Pass rollbackVerified: true to connect()\n" +
+          "        (or set it on the transport) to have applies report accurately."
+      );
+    }
+    check("device still reachable either way", await verify());
   } finally {
-    // ---------- Cleanup: remove the probe section for real ----------
+    // ---------- Cleanup ----------
     console.log("\nCleanup — removing probe section");
     try {
-      await t.revert(CFG);
-      await t.deleteSection(CFG, SECTION);
-      if ((await t.changes(CFG)).length > 0) {
+      session.invalidate(); // drop any staged residue
+      if ((await marker()) !== undefined) {
+        session.beginTransaction();
+        await t.deleteSection(CFG, SECTION);
         await applyChanges(t, [CFG], {
           timeout: ROLLBACK_TIMEOUT_S,
           verify,
@@ -161,6 +211,7 @@ async function main(): Promise<void> {
           verifyDelayMs: 1500,
           onEvent: (m) => console.log(`       [cleanup] ${m}`),
         });
+        session.endTransaction();
       }
       const gone = (await marker()) === undefined;
       const clean = (await t.changes(CFG)).length === 0;

@@ -31,8 +31,17 @@ import { SessionManager } from "./session";
 
 export class LuciRpcTransport implements UciTransport {
   readonly name = "luci-rpc";
-  /** No apply/confirm/rollback on this endpoint — commits are unprotected. */
-  readonly capabilities: UciCapabilities = { rollback: false };
+  /**
+   * No apply/confirm/rollback on this endpoint — commits are unprotected.
+   * `revert`/`commit` are exposed here (verified working via this endpoint even
+   * where the ubus ACL forbids them).
+   */
+  readonly capabilities: UciCapabilities = {
+    rollback: false,
+    rollbackVerified: false,
+    revert: true,
+    commit: true,
+  };
 
   constructor(
     private readonly baseUrl: string,
@@ -46,14 +55,14 @@ export class LuciRpcTransport implements UciTransport {
     return parseSections(result);
   }
 
-  async putSection(
+  async addSection(
     config: string,
     section: string,
     type: string,
     values: SectionValues
   ): Promise<void> {
-    // `section(config, type, name, values)` is a create-or-update upsert and
-    // sets all options in the same call.
+    // `section(config, type, name, values)` creates the named section and sets
+    // all options in one call (verified on the device).
     await this.call("section", [config, type, section, values]);
   }
 
@@ -95,6 +104,15 @@ export class LuciRpcTransport implements UciTransport {
       return await this.callOnce(method, params, opts);
     } catch (err) {
       if (err instanceof UciAuthError) {
+        if (this.session.inTransaction) {
+          throw new UciAuthError(
+            `${err.message} — the session expired partway through a stage-and-apply ` +
+              `cycle, so staged changes were lost and nothing was applied.`,
+            this.name,
+            method,
+            err.detail
+          );
+        }
         if (this.session.canRenew) {
           this.session.invalidate();
           return await this.callOnce(method, params, opts);

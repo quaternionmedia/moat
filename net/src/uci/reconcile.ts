@@ -196,15 +196,16 @@ export async function stageConfig(
   for (const { section, options } of plan.deleteOptions) {
     await transport.deleteOptions(config, section, options);
   }
+  // Creates and updates take different UCI calls: `add` names a new section,
+  // while `set` only mutates one that already exists. The plan already tells
+  // us which is which, so no existence probe is needed.
   for (const name of plan.create) {
     const want = desired[name]!;
-    await transport.putSection(config, name, want.type, want.values);
+    await transport.addSection(config, name, want.type, want.values);
   }
   for (const { section } of plan.update) {
     const want = desired[section]!;
-    // putSection rather than setOptions: it also fixes a changed section type,
-    // and is an upsert either way.
-    await transport.putSection(config, section, want.type, want.values);
+    await transport.setOptions(config, section, want.values);
   }
 
   return plan;

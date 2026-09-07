@@ -46,8 +46,12 @@ export interface UciAuth {
 export function authFromEnv(env: NodeJS.ProcessEnv = process.env): UciAuth {
   const auth: UciAuth = {};
   if (env.UCI_SESSION) auth.session = env.UCI_SESSION;
-  if (env.UCI_USERNAME) auth.username = env.UCI_USERNAME;
-  if (env.UCI_PASSWORD) auth.password = env.UCI_PASSWORD;
+  // OPENWRT_USER/OPENWRT_PASSWORD are the names used in this project's .env,
+  // so accept both spellings rather than making callers remap them.
+  const username = env.UCI_USERNAME ?? env.OPENWRT_USER;
+  const password = env.UCI_PASSWORD ?? env.OPENWRT_PASSWORD;
+  if (username) auth.username = username;
+  if (password) auth.password = password;
   if (env.UCI_TIMEOUT) {
     const t = Number(env.UCI_TIMEOUT);
     if (Number.isFinite(t)) auth.timeout = t;
@@ -70,6 +74,7 @@ export function hasUsableAuth(auth: UciAuth): boolean {
 export class SessionManager {
   private current?: string;
   private inFlight?: Promise<string>;
+  private txDepth = 0;
 
   constructor(
     private readonly baseUrl: string,
@@ -100,6 +105,31 @@ export class SessionManager {
   /** Drop the cached session so the next `get()` re-authenticates. */
   invalidate(): void {
     this.current = undefined;
+  }
+
+  /**
+   * Mark the start of a stage-then-apply cycle.
+   *
+   * Critical: ubus stages UCI changes **per session** — a new session sees an
+   * empty change set (verified on the device). So re-authenticating between
+   * staging and applying would silently discard every staged change and then
+   * apply nothing, while reporting success. Inside a transaction the
+   * transports must therefore refuse to renew, and fail loudly instead.
+   *
+   * The practical consequence: a whole stage+apply cycle has to finish inside
+   * one session lifetime (300s by default on this device).
+   */
+  beginTransaction(): void {
+    this.txDepth++;
+  }
+
+  endTransaction(): void {
+    if (this.txDepth > 0) this.txDepth--;
+  }
+
+  /** True while a stage-then-apply cycle is in progress. */
+  get inTransaction(): boolean {
+    return this.txDepth > 0;
   }
 
   private async login(): Promise<string> {

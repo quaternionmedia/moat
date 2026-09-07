@@ -8,16 +8,37 @@
  * makes the device unreachable. A plain commit cannot recover from that.
  *
  * On ubus we therefore never plain-commit. We:
- *   1. `uci.apply{rollback:true, timeout:N}` — commits, reloads services, and
- *      arms a timer that restores the previous config after N seconds.
+ *   1. `uci.apply{rollback:true, timeout:N}` — asks rpcd to commit, reload
+ *      services, and arm a timer restoring the previous config after N seconds.
  *   2. Prove we can still talk to the device.
  *   3. Only then `uci.confirm()` to cancel the timer.
  *
- * If step 2 fails we deliberately do nothing: staying silent is what lets the
+ * If step 2 fails we deliberately do nothing: silence is what should let the
  * device rescue itself. Never call `confirm()` on a hope.
  *
- * On LuCI RPC no such mechanism exists, so `commit()` is the only option and
- * the caller is told the apply was unprotected.
+ * ## The 90-second floor
+ *
+ * rpcd **silently ignores a rollback timeout below 90 seconds**: the call
+ * returns status 0 and no timer is armed. Verified on OpenWrt 24.10.1/ramips —
+ * a 15s request never reverted, while a 90s request reverted at t+92s. LuCI's
+ * own controller clamps with `max(timeout, 90)` for the same reason, so this
+ * module enforces MIN_ROLLBACK_TIMEOUT_S rather than passing a smaller value
+ * through and quietly losing the safety net.
+ *
+ * Protection is still reported from measurement (`rollbackVerified`), not from
+ * `capabilities.rollback`, which only means "the methods are callable".
+ *
+ * ## Observing a rollback
+ *
+ * Do not use `uci.get` to check whether a revert happened: it overlays the
+ * session's staged delta and will keep returning the new value even after the
+ * committed file has been restored. Note also that a rollback restores
+ * `/etc/config` but leaves the session's delta in place, so a session that has
+ * been rolled back should be abandoned rather than reused — otherwise the next
+ * apply re-applies the very change that was just reverted.
+ *
+ * On LuCI RPC no apply/confirm exists at all, so `commit()` is the only option
+ * and the caller is told the apply was unprotected.
  */
 
 import { UciError, UciTransport, supportsRollback } from "./types";
@@ -53,6 +74,11 @@ export interface ApplyResult {
 }
 
 const DEFAULT_TIMEOUT_S = 90;
+/**
+ * rpcd arms no timer at all below this, while still returning success, so a
+ * smaller value is silently no protection. Matches LuCI's `max(timeout, 90)`.
+ */
+export const MIN_ROLLBACK_TIMEOUT_S = 90;
 const DEFAULT_ATTEMPTS = 8;
 const DEFAULT_DELAY_MS = 3000;
 
@@ -73,6 +99,15 @@ export async function applyChanges(
   const log = opts.onEvent ?? (() => {});
 
   if (!supportsRollback(transport)) {
+    if (!transport.capabilities.commit) {
+      throw new UciError(
+        `transport "${transport.name}" can neither apply-with-rollback nor commit, so ` +
+          `staged changes cannot be persisted. Grant uci apply+confirm (preferred) or ` +
+          `commit via an rpcd ACL file in /usr/share/rpcd/acl.d/.`,
+        transport.name,
+        "apply"
+      );
+    }
     // Unprotected path. Commit per config file; there is no way to make this
     // atomic across files on this transport.
     log(
@@ -88,8 +123,27 @@ export async function applyChanges(
     return { rollbackProtected: false, confirmed: true, committed };
   }
 
-  const timeout = opts.timeout ?? DEFAULT_TIMEOUT_S;
-  log(`applying with a ${timeout}s rollback timer armed`);
+  const requested = opts.timeout ?? DEFAULT_TIMEOUT_S;
+  // Clamp rather than honour a smaller value: passing it through would arm
+  // nothing while looking like it worked.
+  const timeout = Math.max(requested, MIN_ROLLBACK_TIMEOUT_S);
+  if (timeout !== requested) {
+    log(
+      `rollback timeout raised from ${requested}s to ${timeout}s — rpcd silently ` +
+        `arms no timer below ${MIN_ROLLBACK_TIMEOUT_S}s`
+    );
+  }
+  if (!transport.capabilities.rollbackVerified) {
+    // Do not let a caller believe there is a net when there may not be. On the
+    // target device apply+confirm are permitted and return success while no
+    // rollback occurs (measured), so this warning is the accurate default.
+    log(
+      `WARNING: uci.apply/confirm are available but rollback has NOT been verified ` +
+        `on this device. Treat this apply as UNPROTECTED: if it cuts off access, ` +
+        `nothing will restore the previous config automatically.`
+    );
+  }
+  log(`applying (requested rollback timer: ${timeout}s)`);
   await transport.apply({ timeout });
 
   // No verifier supplied means we cannot honestly claim the device is still
@@ -120,15 +174,29 @@ export async function applyChanges(
     if (ok) {
       await transport.confirm();
       log(`device still reachable — confirmed after ${attempt} attempt(s)`);
-      return { rollbackProtected: true, confirmed: true, committed: [] };
+      // Report what is true, not what was requested.
+      return {
+        rollbackProtected: transport.capabilities.rollbackVerified,
+        confirmed: true,
+        committed: [],
+      };
     }
     log(`verify attempt ${attempt}/${attempts} failed`);
   }
 
-  // Intentionally do NOT confirm. The armed timer is the recovery mechanism.
+  // Intentionally do NOT confirm: if a timer really is armed, silence is what
+  // triggers recovery.
   log(
-    `could not reach the device after ${attempts} attempts — leaving the rollback ` +
-      `timer to expire. It should restore the previous config within ${timeout}s.`
+    transport.capabilities.rollbackVerified
+      ? `could not reach the device after ${attempts} attempts — leaving the rollback ` +
+          `timer to expire. It should restore the previous config within ${timeout}s.`
+      : `could not reach the device after ${attempts} attempts and did not confirm. ` +
+          `Rollback is UNVERIFIED on this device, so do not assume recovery: the ` +
+          `change may well still be live. Manual intervention is likely needed.`
   );
-  return { rollbackProtected: true, confirmed: false, committed: [] };
+  return {
+    rollbackProtected: transport.capabilities.rollbackVerified,
+    confirmed: false,
+    committed: [],
+  };
 }

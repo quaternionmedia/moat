@@ -47,10 +47,38 @@ export type UciChange = unknown;
 
 export interface UciCapabilities {
   /**
-   * Transport can arm a rollback timer around an apply: if `confirm()` does
-   * not arrive within the timeout, the device restores the previous config.
+   * `uci.apply` and `uci.confirm` are *callable*. This says nothing about
+   * whether the rollback actually happens — see `rollbackVerified`.
    */
   rollback: boolean;
+  /**
+   * A rollback was empirically observed to restore `/etc/config` after an
+   * unconfirmed apply.
+   *
+   * Measured rather than inferred, because the ACL permitting apply+confirm
+   * does not guarantee a timer gets armed. Two traps, both hit during
+   * development on OpenWrt 24.10.1/ramips:
+   *
+   * 1. **A timeout under 90s is silently ignored.** `apply{rollback:true,
+   *    timeout:15}` returns status 0 and arms nothing. LuCI clamps with
+   *    `max(timeout, 90)` for this reason — see MIN_ROLLBACK_TIMEOUT_S.
+   * 2. **`uci.get` cannot be used to observe a rollback.** It overlays the
+   *    session's staged delta, so it keeps reporting the new value even after
+   *    the committed file has been restored. Verifying a revert means reading
+   *    the committed config, not the effective value.
+   *
+   * With a 90s timer, the revert was observed at t+92s.
+   */
+  rollbackVerified: boolean;
+  /**
+   * `revert` is callable. Not guaranteed: LuCI's standard rpcd ACL grants
+   * uci [changes, get, add, apply, confirm, delete, order, rename, set] and
+   * omits both `revert` and `commit` — the intended flow is apply+confirm.
+   * Verified on the target device.
+   */
+  revert: boolean;
+  /** `commit` is callable. Often absent for the same reason as `revert`. */
+  commit: boolean;
 }
 
 /** UCI meta keys that `get_all` returns but that are not real options. */
@@ -126,12 +154,14 @@ export interface UciTransport {
   getAll(config: string): Promise<Sections>;
 
   /**
-   * Create-or-update a named section together with its options.
-   * Idempotent upsert — which is why this design needs no "adopt" step for
-   * stock `lan`/`wan`/zone sections (unlike the uapi REST provider, where a
-   * colliding create returned 422).
+   * Create a new named section with its options.
+   *
+   * Must be distinct from `setOptions`: ubus `uci.set` only mutates an
+   * existing section and returns NOT_FOUND for a new one, so creation has to
+   * go through `uci.add`. Callers know which case they are in from the plan,
+   * so no existence probe is needed.
    */
-  putSection(config: string, section: string, type: string, values: SectionValues): Promise<void>;
+  addSection(config: string, section: string, type: string, values: SectionValues): Promise<void>;
 
   /** Set options on an existing section without touching its other options. */
   setOptions(config: string, section: string, values: SectionValues): Promise<void>;
