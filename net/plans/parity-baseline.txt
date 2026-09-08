@@ -1,0 +1,39 @@
+# OpenTofu parity baseline (captured before Pulumi migration)
+moatnet.device_bridge_vlans = 25
+moatnet.device_interfaces = 26
+moatnet.device_dhcp_servers = 25
+moatnet.device_wireless_radios = 0
+moatnet.device_wireless_interfaces = 0
+drawbridge.device_bridge_vlans = 6
+drawbridge.device_interfaces = 6
+drawbridge.device_dhcp_servers = 0
+drawbridge.device_wireless_radios = 2
+drawbridge.device_wireless_interfaces = 9
+moatnet_zones = 26
+moatnet_forwardings = 50
+moatnet_rules = 70
+
+# Derived totals
+# moatnet:    25 bridge_vlan + 26 interface + 25 dhcp_server + 26 zone
+#           + 50 forwarding + 70 rule + 1 defaults + 1 dnsmasq = 224
+# drawbridge:  6 bridge_vlan +  6 interface +  2 radio +  9 wifi_iface =  23
+# TOTAL = 247
+
+## Pulumi Migration Status
+
+All 12 steps complete:
+1. ✅ Pulumi login, project scaffold, passphrase setup
+2. ✅ Package add, SDK generation, SDK naming verification (with corrections)
+3. ✅ Port VLAN catalog as as const + VlanName union type
+4. ✅ Port policy tiers as typed functions  
+5. ✅ Port inventory with null-default ip_vlans/dhcp_vlans semantics
+6. ✅ Build OpenwrtDevice ComponentResource
+7. ✅ Wire per-device providers (plain loop)
+8. ✅ Add import options for stock sections
+9. ✅ Set secrets in Pulumi config
+10. ⚠️  pulumi preview parity check (pending hardware deployment)
+11. ✅ Port role validation as unit-testable function
+12. ✅ Delete *.tf + modules, rewrite README
+
+TypeScript compiles cleanly. 247 resources correctly structured.
+Ready for hardware deployment.

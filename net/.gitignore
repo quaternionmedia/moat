@@ -1,0 +1,19 @@
+# Pulumi
+node_modules/
+bin/
+sdks/
+dist/
+.pulumi/
+
+# OpenTofu (legacy, kept in git history)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+
+# Secrets
+*.pem
+*.key
+.env
+.token
