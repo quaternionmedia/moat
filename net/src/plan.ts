@@ -12,6 +12,7 @@
 import { INVENTORY } from "./inventory";
 import { POLICY } from "./policy";
 import { UciConfigName, expandDevice } from "./openwrt";
+import { endpointToHost } from "./device";
 import {
   authFromEnv,
   connect,
@@ -40,11 +41,12 @@ async function main(): Promise<void> {
 
   // Endpoint in inventory carries the old uapi REST path; strip it and any
   // scheme mismatch by allowing UCI_HOST to win.
-  const host = process.env.UCI_HOST ?? device.endpoint.replace(/\/api\/v3\/?$/, "");
+  const host = process.env.UCI_HOST ?? endpointToHost(device.endpoint);
 
   const transport = await connect({
     baseUrl: host,
     auth,
+    insecure: device.insecure ?? true,
     onEvent: (m) => console.log(`[detect] ${m}`),
   });
 

@@ -14,6 +14,7 @@
  */
 
 import { SessionManager, UciAuth } from "./session";
+import { createFetch } from "./httpClient";
 import { LuciRpcTransport } from "./luci-rpc";
 import { UbusTransport } from "./ubus";
 import { UciTransport } from "./types";
@@ -21,6 +22,7 @@ import { UciTransport } from "./types";
 export * from "./types";
 export * from "./apply";
 export * from "./reconcile";
+export { createFetch, HttpClientOptions } from "./httpClient";
 export { SessionManager, UciAuth, authFromEnv, hasUsableAuth } from "./session";
 export { UbusTransport } from "./ubus";
 export { LuciRpcTransport } from "./luci-rpc";
@@ -33,6 +35,14 @@ export interface ConnectOptions {
   baseUrl: string;
   auth: UciAuth;
   preference?: TransportPreference;
+  /**
+   * Skip TLS certificate verification. Needed for any https OpenWrt endpoint,
+   * which serves a self-signed (and often expired) certificate — Node's global
+   * fetch rejects it with an opaque "fetch failed". Ignored for http URLs.
+   * Defaults to true, matching the inventory's own default.
+   */
+  insecure?: boolean;
+  /** Override the HTTP client entirely (tests). Bypasses `insecure`. */
   fetchImpl?: typeof fetch;
   onEvent?: (message: string) => void;
   /**
@@ -58,7 +68,7 @@ export async function connect(opts: ConnectOptions): Promise<UciTransport> {
   const log = opts.onEvent ?? (() => {});
   const baseUrl = opts.baseUrl.replace(/\/+$/, "");
   const preference = opts.preference ?? "auto";
-  const fetchImpl = opts.fetchImpl ?? fetch;
+  const fetchImpl = opts.fetchImpl ?? createFetch({ insecure: opts.insecure ?? true });
   const session = new SessionManager(baseUrl, opts.auth, fetchImpl);
 
   const ubus = new UbusTransport(baseUrl, session, fetchImpl);

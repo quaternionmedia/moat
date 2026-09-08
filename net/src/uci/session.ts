@@ -79,8 +79,9 @@ export class SessionManager {
   constructor(
     private readonly baseUrl: string,
     private readonly auth: UciAuth,
-    private readonly fetchImpl: typeof fetch = fetch,
-    private readonly insecure = true
+    // TLS handling lives in the fetch implementation (see httpClient.ts), so
+    // this class needs no notion of certificate trust.
+    private readonly fetchImpl: typeof fetch = fetch
   ) {
     this.current = auth.session;
   }

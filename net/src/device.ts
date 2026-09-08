@@ -45,6 +45,12 @@ export interface OpenwrtDeviceArgs {
   deleteOnDestroy?: boolean;
 }
 
+/** Turn an inventory endpoint into a UCI base URL. */
+export function endpointToHost(endpoint: string): string {
+  // Stacks still carry the old uapi REST path; UCI wants the bare base URL.
+  return endpoint.replace(/\/api\/v\d+\/?$/, "").replace(/\/+$/, "");
+}
+
 /** Apply order. See the note above — this sequence is deliberate. */
 const APPLY_ORDER: UciConfigName[] = ["firewall", "network", "dhcp", "wireless"];
 
@@ -58,9 +64,7 @@ export class OpenwrtDevice extends pulumi.ComponentResource {
     const device = args.device;
     const plan = expandDevice(device, args.policy ?? {}, args.expand ?? {});
 
-    // The inventory endpoint still carries the old uapi REST path in some
-    // stacks; UCI wants the bare device base URL.
-    const host = device.endpoint.replace(/\/api\/v\d+\/?$/, "").replace(/\/+$/, "");
+    const host = endpointToHost(device.endpoint);
 
     let previous: pulumi.Resource | undefined;
 
@@ -78,6 +82,7 @@ export class OpenwrtDevice extends pulumi.ComponentResource {
           config,
           sections: managed.sections,
           ownership: managed.ownership,
+          insecure: device.insecure ?? true,
           ...(args.applyTimeout !== undefined ? { applyTimeout: args.applyTimeout } : {}),
           ...(args.rollbackVerified !== undefined
             ? { rollbackVerified: args.rollbackVerified }

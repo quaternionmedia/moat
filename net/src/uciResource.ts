@@ -70,6 +70,11 @@ export interface UciConfigArgs {
   rollbackVerified?: pulumi.Input<boolean>;
   /** Remove our managed sections from the device on destroy. Default false. */
   deleteOnDestroy?: pulumi.Input<boolean>;
+  /**
+   * Skip TLS verification. Required for any https OpenWrt endpoint, which
+   * serves a self-signed certificate. Defaults to true.
+   */
+  insecure?: pulumi.Input<boolean>;
 }
 
 interface Inputs {
@@ -81,6 +86,7 @@ interface Inputs {
   applyTimeout?: number;
   rollbackVerified?: boolean;
   deleteOnDestroy?: boolean;
+  insecure?: boolean;
 }
 
 /** Stable fingerprint of the inputs that matter for diffing. */
@@ -101,6 +107,9 @@ async function openTransport(i: Inputs) {
   const connectOpts: Parameters<typeof connect>[0] = {
     baseUrl: i.host,
     auth,
+    // Stock OpenWrt certs are self-signed, so https needs this or Node's fetch
+    // fails with an opaque error before any UCI call is made.
+    insecure: i.insecure ?? true,
     onEvent: (m) => pulumi.log.debug(`[${i.deviceName}/${i.config}] ${m}`),
   };
   if (i.rollbackVerified !== undefined) connectOpts.rollbackVerified = i.rollbackVerified;
