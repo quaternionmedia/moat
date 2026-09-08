@@ -86,15 +86,31 @@ export async function connect(opts: ConnectOptions): Promise<UciTransport> {
   }
 
   // Require an authorized uci read, not merely a reachable endpoint.
+  let ubusErr: unknown;
   try {
+    log("probing ubus transport...");
     await ubus.getAll("network");
     log("selected ubus transport (rollback-protected applies available)");
     return ubus;
   } catch (err) {
-    log(`ubus unavailable (${String(err)}); falling back to luci-rpc`);
+    ubusErr = err;
+    const errMsg = err instanceof Error ? err.message : String(err);
+    log(`ubus unavailable (${errMsg}); falling back to luci-rpc`);
   }
 
-  await luci.getAll("network");
-  log("selected luci-rpc transport — NO rollback protection on apply");
-  return luci;
+  let luciErr: unknown;
+  try {
+    log("probing luci-rpc transport...");
+    await luci.getAll("network");
+    log("selected luci-rpc transport — NO rollback protection on apply");
+    return luci;
+  } catch (err) {
+    luciErr = err;
+  }
+
+  const ubusMsg = ubusErr instanceof Error ? ubusErr.message : String(ubusErr);
+  const luciMsg = luciErr instanceof Error ? luciErr.message : String(luciErr);
+  throw new Error(
+    `Neither transport available. ubus: ${ubusMsg}. luci-rpc: ${luciMsg}`
+  );
 }

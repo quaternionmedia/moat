@@ -82,7 +82,7 @@ export interface UciCapabilities {
 }
 
 /** UCI meta keys that `get_all` returns but that are not real options. */
-const META_KEYS = new Set([".name", ".type", ".anonymous", ".index"]);
+const META_KEYS = [".name", ".type", ".anonymous", ".index"];
 
 /**
  * Split a raw `get_all` section into our `Section` shape, dropping the
@@ -91,7 +91,7 @@ const META_KEYS = new Set([".name", ".type", ".anonymous", ".index"]);
 export function parseSection(raw: Record<string, unknown>): Section {
   const values: SectionValues = {};
   for (const [k, v] of Object.entries(raw)) {
-    if (META_KEYS.has(k)) continue;
+    if (META_KEYS.includes(k)) continue;
     if (typeof v === "string") values[k] = v;
     else if (Array.isArray(v)) values[k] = v.map(String);
     // Anything else (number/bool) is coerced — UCI is string-typed on disk.
@@ -129,6 +129,16 @@ export class UciError extends Error {
   ) {
     super(message);
     this.name = "UciError";
+  }
+
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      transport: this.transport,
+      method: this.method,
+      detail: this.detail,
+    };
   }
 }
 

@@ -74,11 +74,11 @@ export interface OwnershipSpec {
 
 /** Rebuild the predicate form from the serializable spec. */
 export function toReconcileOptions(spec: OwnershipSpec): ReconcileOptions {
-  const owned = new Set(spec.ownedTypes ?? []);
-  const ownedNamed = new Set(spec.ownedNamedTypes ?? []);
+  const owned = spec.ownedTypes ?? [];
+  const ownedNamed = spec.ownedNamedTypes ?? [];
   const opts: ReconcileOptions = {
     managed: (_name, s) =>
-      owned.has(s.type) || (ownedNamed.has(s.type) && s.anonymous !== true),
+      owned.includes(s.type) || (ownedNamed.includes(s.type) && s.anonymous !== true),
   };
   if (spec.prune !== undefined) opts.prune = spec.prune;
   if (spec.pruneOptions !== undefined) opts.pruneOptions = spec.pruneOptions;
@@ -150,7 +150,7 @@ export function planConfig(
   opts: ReconcileOptions = {}
 ): ConfigPlan {
   const managed = opts.managed ?? (() => false);
-  const preserve = new Set(opts.preserve ?? []);
+  const preserve = opts.preserve ?? [];
 
   const plan: ConfigPlan = {
     config,
@@ -195,7 +195,7 @@ export function planConfig(
       plan.unmanaged.push(name);
       continue;
     }
-    if (preserve.has(name)) {
+    if (preserve.includes(name)) {
       plan.unmanaged.push(name);
       continue;
     }

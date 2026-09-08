@@ -96,17 +96,52 @@ function fingerprint(i: Inputs): string {
 
 async function openTransport(i: Inputs) {
   const auth = authFromEnv();
+  pulumi.log.debug(`[${i.deviceName}] env auth: username=${auth.username ? "***" : "(none)"} password=${auth.password ? "***" : "(none)"}`);
+
+  // Fallback to Pulumi config if environment isn't available (e.g., in subprocess).
+  // Config is encrypted, so this is safe. Keys are set as auth:username, auth:password.
+  if (!auth.username) {
+    const cfg = new pulumi.Config();
+    const secret = cfg.getSecret("auth:username");
+    if (typeof secret === "string") {
+      auth.username = secret;
+      pulumi.log.debug(`[${i.deviceName}] loaded username from config:secret`);
+    } else {
+      auth.username = cfg.get("auth:username");
+      if (auth.username) pulumi.log.debug(`[${i.deviceName}] loaded username from config`);
+    }
+  }
+  if (!auth.password) {
+    const cfg = new pulumi.Config();
+    const secret = cfg.getSecret("auth:password");
+    if (typeof secret === "string") {
+      auth.password = secret;
+      pulumi.log.debug(`[${i.deviceName}] loaded password from config:secret`);
+    } else {
+      auth.password = cfg.get("auth:password");
+      if (auth.password) pulumi.log.debug(`[${i.deviceName}] loaded password from config`);
+    }
+  }
+  pulumi.log.debug(`[${i.deviceName}] final auth: username=${auth.username ? "***" : "(none)"} password=${auth.password ? "***" : "(none)"}`);
+
   if (!auth.username || !auth.password) {
+    // List what we found to help debug missing credentials
+    const found = Object.keys(process.env)
+      .filter((k) => /openwrt|uci|pulumi/i.test(k))
+      .map((k) => `${k}=${process.env[k] ? "***" : "(empty)"}`)
+      .join(", ");
+    pulumi.log.error(`DEBUG: found env vars: ${found}`);
     throw new Error(
-      `No device credentials in the environment for "${i.deviceName}". Set ` +
-        `OPENWRT_USER/OPENWRT_PASSWORD (or UCI_USERNAME/UCI_PASSWORD) before ` +
-        `running pulumi — e.g. \`set -a; . ./.env; set +a\`. Credentials are read ` +
-        `from the environment on purpose, to keep them out of Pulumi state.`
+      `No device credentials in the environment for "${i.deviceName}". ` +
+        `Set OPENWRT_USER/OPENWRT_PASSWORD (or UCI_USERNAME/UCI_PASSWORD) before running pulumi ` +
+        `— e.g. \`set -a; . ./.env; set +a\`. Credentials are read from the environment on purpose, ` +
+        `to keep them out of Pulumi state. Currently found: ${found || "(none)"}`
     );
   }
   const connectOpts: Parameters<typeof connect>[0] = {
     baseUrl: i.host,
     auth,
+    preference: "ubus",
     // Stock OpenWrt certs are self-signed, so https needs this or Node's fetch
     // fails with an opaque error before any UCI call is made.
     insecure: i.insecure ?? true,
@@ -118,7 +153,8 @@ async function openTransport(i: Inputs) {
 
 /** Stage the delta and apply it, all inside one session. */
 async function reconcileAndApply(i: Inputs): Promise<{ summary: string; applied: boolean }> {
-  const transport = await openTransport(i);
+  try {
+    const transport = await openTransport(i);
   const label = `${i.deviceName}/${i.config}`;
   const reconcileOpts = toReconcileOptions(i.ownership);
 
@@ -165,6 +201,24 @@ async function reconcileAndApply(i: Inputs): Promise<{ summary: string; applied:
     return { summary, applied: true };
   } finally {
     transport.endTransaction();
+  }
+  } catch (err) {
+    const uciErr = err as any;
+    let msg: string;
+    if (err instanceof Error) {
+      msg = `${err.message}`;
+    } else if (typeof err === "object") {
+      msg = JSON.stringify(err);
+    } else {
+      msg = String(err);
+    }
+    if (uciErr.transport) msg += ` [${uciErr.transport}/${uciErr.method || "?"}]`;
+    if (uciErr.detail) msg += ` detail=${JSON.stringify(uciErr.detail)}`;
+
+    pulumi.log.error(`${i.deviceName}/${i.config}: ${msg}`);
+    const wrapped = new Error(`${i.deviceName}/${i.config}: reconciliation failed: ${msg}`);
+    (wrapped as Error & { cause?: unknown }).cause = err;
+    throw wrapped;
   }
 }
 
