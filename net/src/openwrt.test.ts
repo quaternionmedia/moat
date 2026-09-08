@@ -12,7 +12,7 @@
 import { INVENTORY } from "./inventory";
 import { POLICY } from "./policy";
 import { expandDevice, portSpecToUci } from "./openwrt";
-import { Section, planConfig } from "./uci";
+import { Section, planConfig, toReconcileOptions } from "./uci";
 
 let failures = 0;
 function check(label: string, ok: boolean, detail?: string) {
@@ -135,7 +135,7 @@ console.log("\nopenwrt expander tests\n");
 {
   const anonRule: Section = { type: "rule", values: { name: "Allow-ICMPv6-Input" }, anonymous: true };
   const namedRule: Section = { type: "rule", values: { name: "our-rule" } };
-  const fw = plan.firewall.reconcile;
+  const fw = toReconcileOptions(plan.firewall.ownership);
 
   check("stock anonymous rules are NOT owned", !fw.managed!("cfg0a92bd", anonRule));
   check("our named rules ARE owned", fw.managed!("our-rule", namedRule));
@@ -144,10 +144,17 @@ console.log("\nopenwrt expander tests\n");
     fw.managed!("cfg01e63d", { type: "defaults", values: {}, anonymous: true })
   );
 
-  const net = plan.network.reconcile;
+  // The spec must stay serializable — it crosses a Pulumi resource boundary.
+  check(
+    "ownership spec survives JSON round-trip",
+    JSON.stringify(JSON.parse(JSON.stringify(plan.firewall.ownership))) ===
+      JSON.stringify(plan.firewall.ownership)
+  );
+
+  const net = toReconcileOptions(plan.network.ownership);
   check("loopback is preserved", (net.preserve ?? []).includes("loopback"));
   check("wan6 is preserved", (net.preserve ?? []).includes("wan6"));
-  check("odhcpd is preserved", (plan.dhcp.reconcile.preserve ?? []).includes("odhcpd"));
+  check("odhcpd is preserved", (plan.dhcp.ownership.preserve ?? []).includes("odhcpd"));
 
   // The whole point: planning against real stock state must not delete these.
   const stock = {

@@ -114,7 +114,22 @@ export class UbusTransport implements UciTransport, RollbackCapable {
   }
 
   async commit(config: string): Promise<void> {
+    if (!this.capabilities.commit) {
+      throw new UciError(
+        `uci.commit is not permitted by this session's ubus ACL; use apply() instead.`,
+        this.name,
+        "commit"
+      );
+    }
     await this.call("commit", { config });
+  }
+
+  beginTransaction(): void {
+    this.session.beginTransaction();
+  }
+
+  endTransaction(): void {
+    this.session.endTransaction();
   }
 
   /**

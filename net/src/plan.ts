@@ -12,7 +12,15 @@
 import { INVENTORY } from "./inventory";
 import { POLICY } from "./policy";
 import { UciConfigName, expandDevice } from "./openwrt";
-import { authFromEnv, connect, hasUsableAuth, isNoop, planConfig, summarize } from "./uci";
+import {
+  authFromEnv,
+  connect,
+  hasUsableAuth,
+  isNoop,
+  planConfig,
+  summarize,
+  toReconcileOptions,
+} from "./uci";
 
 const CONFIGS: UciConfigName[] = ["network", "firewall", "dhcp", "wireless"];
 
@@ -55,7 +63,7 @@ async function main(): Promise<void> {
     }
 
     const current = await transport.getAll(config);
-    const p = planConfig(config, current, desired, managed.reconcile);
+    const p = planConfig(config, current, desired, toReconcileOptions(managed.ownership));
     console.log(summarize(p));
 
     if (!isNoop(p)) {

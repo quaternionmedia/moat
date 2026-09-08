@@ -45,7 +45,7 @@
 import { Device, effectiveDhcpVlans, effectiveIpVlans } from "./inventory";
 import { DevicePolicy } from "./policy";
 import { VLAN_NETWORKS } from "./vlans";
-import { ReconcileOptions, Section, Sections } from "./uci";
+import { OwnershipSpec, Section, Sections } from "./uci";
 
 /** UCI is string-typed on disk; booleans are "1"/"0". */
 const bool = (v: boolean | undefined): string | undefined =>
@@ -71,8 +71,12 @@ const sec = (type: string, values: Record<string, string | string[] | undefined>
 
 export interface ManagedConfig {
   sections: Sections;
-  /** Ownership policy for this config file, consumed by planConfig(). */
-  reconcile: ReconcileOptions;
+  /**
+   * Ownership policy for this config file. Declared as serializable data
+   * rather than a predicate so it can be passed as a Pulumi resource input;
+   * `toReconcileOptions()` converts it for the planner.
+   */
+  ownership: OwnershipSpec;
 }
 
 export type UciConfigName = "network" | "firewall" | "dhcp" | "wireless";
@@ -169,12 +173,13 @@ function expandNetwork(device: Device): ManagedConfig {
 
   return {
     sections,
-    reconcile: {
+    ownership: {
       prune: true,
       // loopback and the IPv6 wan are not ours and losing them hurts.
       preserve: ["loopback", "globals", "wan6"],
-      managed: (_name, s) =>
-        s.type === "bridge-vlan" || s.type === "interface" || s.type === "device",
+      // `device` is included so stock's anonymous br-lan section is replaced
+      // by our named one, which is what carries vlan_filtering.
+      ownedTypes: ["bridge-vlan", "interface", "device"],
     },
   };
 }
@@ -242,18 +247,15 @@ function expandFirewall(policy: Partial<DevicePolicy>, o: ExpandOptions): Manage
 
   return {
     sections,
-    reconcile: {
+    ownership: {
       prune: true,
-      managed: (_name, s) => {
-        // Stock ships one anonymous `defaults`; two is invalid, so replace it.
-        if (s.type === "defaults") return true;
-        if (s.type === "zone" || s.type === "forwarding") return true;
-        // Ours are named, stock's are anonymous. Owning only named rules lets
-        // us prune retired policy rules while leaving stock's IPv6/IGMP/IPSec
-        // allows in place. See the file header.
-        if (s.type === "rule") return o.ownAnonymousRules ? true : s.anonymous !== true;
-        return false;
-      },
+      // Stock ships one anonymous `defaults`; two is not a valid firewall, so
+      // it is replaced rather than coexisted with.
+      ownedTypes: ["defaults", "zone", "forwarding", ...(o.ownAnonymousRules ? ["rule"] : [])],
+      // Ours are named, stock's are anonymous. Owning only named rules prunes
+      // retired policy rules while leaving stock's IPv6/IGMP/IPSec allows in
+      // place. See the file header.
+      ownedNamedTypes: o.ownAnonymousRules ? [] : ["rule"],
     },
   };
 }
@@ -292,14 +294,14 @@ function expandDhcp(device: Device, policy: Partial<DevicePolicy>): ManagedConfi
 
   return {
     sections,
-    reconcile: {
+    ownership: {
       prune: true,
       // odhcpd serves IPv6; it is not ours and removing it breaks SLAAC/DHCPv6.
       // `wan` is stock's `option ignore 1` section telling dnsmasq not to serve
       // DHCP on the uplink. We never manage WAN DHCP, so deleting it would be
       // an unintended change to the gateway's uplink — preserve it.
       preserve: ["odhcpd", "wan"],
-      managed: (_name, s) => s.type === "dhcp" || s.type === "dnsmasq",
+      ownedTypes: ["dhcp", "dnsmasq"],
     },
   };
 }
@@ -333,9 +335,9 @@ function expandWireless(device: Device): ManagedConfig {
 
   return {
     sections,
-    reconcile: {
+    ownership: {
       prune: true,
-      managed: (_name, s) => s.type === "wifi-device" || s.type === "wifi-iface",
+      ownedTypes: ["wifi-device", "wifi-iface"],
     },
   };
 }

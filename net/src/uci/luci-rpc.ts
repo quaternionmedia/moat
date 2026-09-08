@@ -95,6 +95,14 @@ export class LuciRpcTransport implements UciTransport {
     await this.call("revert", [config]);
   }
 
+  beginTransaction(): void {
+    this.session.beginTransaction();
+  }
+
+  endTransaction(): void {
+    this.session.endTransaction();
+  }
+
   private async call(
     method: string,
     params: unknown[],

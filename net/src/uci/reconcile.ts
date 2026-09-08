@@ -50,6 +50,42 @@ export interface ReconcileOptions {
   pruneOptions?: boolean;
 }
 
+/**
+ * A JSON-serializable statement of what we own in a config file.
+ *
+ * `ReconcileOptions.managed` is a predicate, which cannot cross a Pulumi
+ * resource boundary — resource inputs must serialize. So ownership is declared
+ * as data here and turned back into a predicate by `toReconcileOptions()`.
+ */
+export interface OwnershipSpec {
+  prune?: boolean;
+  pruneOptions?: boolean;
+  /** Never delete these, whatever the type rules say. */
+  preserve?: string[];
+  /** Section types we own outright, anonymous or not. */
+  ownedTypes?: string[];
+  /**
+   * Section types we own only when the section is *named*. Used to coexist
+   * with stock config: OpenWrt's own firewall rules are anonymous, ours are
+   * named, so this prunes our retired rules without touching theirs.
+   */
+  ownedNamedTypes?: string[];
+}
+
+/** Rebuild the predicate form from the serializable spec. */
+export function toReconcileOptions(spec: OwnershipSpec): ReconcileOptions {
+  const owned = new Set(spec.ownedTypes ?? []);
+  const ownedNamed = new Set(spec.ownedNamedTypes ?? []);
+  const opts: ReconcileOptions = {
+    managed: (_name, s) =>
+      owned.has(s.type) || (ownedNamed.has(s.type) && s.anonymous !== true),
+  };
+  if (spec.prune !== undefined) opts.prune = spec.prune;
+  if (spec.pruneOptions !== undefined) opts.pruneOptions = spec.pruneOptions;
+  if (spec.preserve !== undefined) opts.preserve = spec.preserve;
+  return opts;
+}
+
 /** What a reconcile would do — the basis for a readable Pulumi diff. */
 export interface ConfigPlan {
   config: string;

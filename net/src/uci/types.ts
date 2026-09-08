@@ -177,6 +177,16 @@ export interface UciTransport {
 
   /** Discard staged changes for one config file. */
   revert(config: string): Promise<void>;
+
+  /**
+   * Pin the session across a stage-then-apply cycle.
+   *
+   * Staging is per-session, so renewing the session midway would discard every
+   * staged change and then apply nothing. Between these calls the transport
+   * refuses to re-authenticate and fails loudly instead.
+   */
+  beginTransaction(): void;
+  endTransaction(): void;
 }
 
 /**
